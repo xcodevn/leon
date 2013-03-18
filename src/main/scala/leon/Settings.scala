@@ -37,7 +37,6 @@ case class Settings(
   val synthesis: Boolean      = false,
   val xlang: Boolean          = false,
   val verify: Boolean         = true,
-  val lemmas : Boolean        = false,
   // This is a list of directories that is passed as class-path of the inner-compiler.
   // It needs to contain at least a directory containing scala-library.jar, and
   // one for the leon runtime library.

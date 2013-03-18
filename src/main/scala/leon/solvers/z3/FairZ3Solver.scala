@@ -22,7 +22,8 @@ import scala.collection.mutable.{Set => MutableSet}
 class FairZ3Solver(context : LeonContext)
   extends Solver(context)
      with AbstractZ3Solver
-     with Z3ModelReconstruction 
+     with Z3ModelReconstruction
+     with Z3Lemmas
      with LeonComponent {
 
   enclosing =>
@@ -35,16 +36,18 @@ class FairZ3Solver(context : LeonContext)
     LeonFlagOptionDef("checkmodels",        "--checkmodels",        "Double-check counter-examples with evaluator"),
     LeonFlagOptionDef("feelinglucky",       "--feelinglucky",       "Use evaluator to find counter-examples early"),
     LeonFlagOptionDef("codegen",            "--codegen",            "Use compiled evaluator instead of interpreter"),
-    LeonFlagOptionDef("fairz3:unrollcores", "--fairz3:unrollcores", "Use unsat-cores to drive unrolling while remaining fair")
+    LeonFlagOptionDef("fairz3:unrollcores", "--fairz3:unrollcores", "Use unsat-cores to drive unrolling while remaining fair"),
+    LeonFlagOptionDef("lemmas",             "--lemmas",             "Magical lemma mystery train")
   )
 
   // What wouldn't we do to avoid defining vars?
-  val (feelingLucky, checkModels, useCodeGen, evalGroundApps, unrollUnsatCores) = locally {
+  val (feelingLucky, checkModels, useCodeGen, evalGroundApps, unrollUnsatCores, useLemmas) = locally {
     var lucky            = false
     var check            = false
     var codegen          = false
     var evalground       = false
     var unrollUnsatCores = false
+    var lemmas           = false
 
     for(opt <- context.options) opt match {
       case LeonFlagOption("checkmodels")        => check            = true
@@ -52,10 +55,11 @@ class FairZ3Solver(context : LeonContext)
       case LeonFlagOption("codegen")            => codegen          = true
       case LeonFlagOption("evalground")         => evalground       = true
       case LeonFlagOption("fairz3:unrollcores") => unrollUnsatCores = true
+      case LeonFlagOption("lemmas")             => lemmas           = true
       case _ =>
     }
 
-    (lucky, check, codegen, evalground, unrollUnsatCores)
+    (lucky, check, codegen, evalground, unrollUnsatCores, lemmas)
   }
 
   private var evaluator : Evaluator = null
@@ -372,15 +376,13 @@ class FairZ3Solver(context : LeonContext)
     private val feelingLucky = enclosing.feelingLucky
     private val checkModels  = enclosing.checkModels
     private val useCodeGen   = enclosing.useCodeGen
+    private val useLemmas    = enclosing.useLemmas
 
     initZ3
 
     val solver = z3.mkSolver
-
-    for(funDef <- program.definedFunctions) {
-      if (funDef.annotations.contains("axiomatize") && !axiomatizedFunctions(funDef)) {
-        reporter.warning("Function " + funDef.id + " was marked for axiomatization but could not be handled.")
-      }
+    if(useLemmas) {
+      prepareLemmas(solver)
     }
 
     private var varsInVC = Set[Identifier]()

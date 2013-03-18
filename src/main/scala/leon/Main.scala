@@ -27,7 +27,6 @@ object Main {
       LeonFlagOptionDef ("synthesis",    "--synthesis",   "Partial synthesis of choose() constructs"),
       LeonFlagOptionDef ("xlang",        "--xlang",       "Support for extra program constructs (imperative,...)"),
       LeonFlagOptionDef ("parse",        "--parse",       "Checks only whether the program is valid PureScala"),
-      LeonFlagOptionDef ("lemmas",       "--lemmas",      "Automagically infer lemmas"),
       LeonValueOptionDef("debug",        "--debug=[1-5]", "Debug level"),
       LeonFlagOptionDef ("help",         "--help",        "Show help")
 
@@ -40,7 +39,7 @@ object Main {
   lazy val allOptions = allComponents.flatMap(_.definedOptions) ++ topLevelOptions
 
   def displayHelp(reporter: Reporter) {
-    reporter.info("usage: leon [--xlang] [--termination] [--synthesis] [--lemmas] [--help] [--debug=<N>] [..] <files>")
+    reporter.info("usage: leon [--xlang] [--termination] [--synthesis] [--help] [--debug=<N>] [..] <files>")
     reporter.info("")
     for (opt <- topLevelOptions.toSeq.sortBy(_.name)) {
       reporter.info("%-20s %s".format(opt.usageOption, opt.usageDesc))
@@ -111,8 +110,6 @@ object Main {
         settings = settings.copy(synthesis = false, xlang = true)
       case LeonFlagOption("parse") =>
         settings = settings.copy(synthesis = false, xlang = false, verify = false)
-      case LeonFlagOption("lemmas") =>
-        settings = settings.copy(lemmas = true)
       case LeonFlagOption("help") =>
         displayHelp(reporter)
       case _ =>
@@ -140,12 +137,7 @@ object Main {
       } else if (settings.xlang) {
         xlang.XlangAnalysisPhase
       } else if (settings.verify) {
-        if (settings.lemmas) {
-          lemmas.LemmaDiscoveryPhase andThen
-          verification.AnalysisPhase
-        } else {
-          verification.AnalysisPhase
-        }
+        verification.AnalysisPhase
       } else {
         NoopPhase()
       }
