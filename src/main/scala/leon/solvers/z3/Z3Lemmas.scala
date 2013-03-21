@@ -36,19 +36,90 @@ trait Z3Lemmas {
         val initialMap : Map[Identifier,Z3AST] = fArgs.map(_.id).zip(bounds).toMap 
 
         // FIXME : that ".get" is bolder that we want it to be.
+        // Also: Apply matchToIfThenElse and let-expansion
         val quantBody : Z3AST = toZ3Formula(funDef.getImplementation, initialMap).get
 
-        // I know, they're really function invocations, but who cares.
-        val calls : Seq[Expr] = functionCallsOf(funDef.getImplementation).toSeq
+        val patternBits : Set[Expr] = mkMultiPattern(funDef.getImplementation)
+        reporter.info("Tentative multi pattern for expression :")
+        reporter.info("--- " + funDef.getImplementation)
+        reporter.info("::")
+        reporter.info("--- " + patternBits.mkString("[",",","]"))
 
-        val patterns : Seq[Z3Pattern] = calls.map(c => z3.mkPattern(toZ3Formula(c, initialMap).get))
+        val multipattern : Z3Pattern = z3.mkPattern(
+          patternBits.toSeq.map(c => toZ3Formula(c, initialMap).get) : _*
+        )
 
-        val axiom : Z3AST = z3.mkForAll(0, patterns, namedBounds, quantBody)
+        val axiom : Z3AST = z3.mkForAll(0, Seq(multipattern), namedBounds, quantBody)
 
         reporter.info("Look ! I made an axiom !")
         reporter.info(axiom.toString)
         solver.assertCnstr(axiom)
       }
     }
+  }
+
+  /* This attempts to find a good set of patterns ("multipatterns") that will work
+   * with Z3 E-Matching algorithm. Here are the rules:
+   *   - patterns cannot contain interpreted symbols (and, or, plus, …).
+   *     (but they *can* contain set membership, for instance)
+   *
+   *   - the sum of patterns (aka multipattern) must reference all free variables of
+   *     the original expression
+   *
+   *   - patterns *should* be small (which means, more general)
+   *
+   *   - patterns *should* include all function terms of the expression, so that
+   *     instantiation doesn't introduce new function terms (this design decision is
+   *     up for debate). This should make --lemmas relatively predictable and
+   *     efficient.
+   *
+   *     (Z3's pattern_inference.cpp has ~750 loc. That's encouraging.)
+   */
+  private def mkMultiPattern(expr : Expr) : Set[Expr] = {
+    def break(e : Expr) : Either[Expr,Set[Expr]] = e match {
+      case And(es)            => Right(es.toSet)
+      case Or(es)             => Right(es.toSet)
+      case Not(e)             => Right(Set(e))
+      case Implies(l,r)       => Right(Set(l,r))
+      case Iff(l,r)           => Right(Set(l,r))
+      case IfExpr(c,t,e)      => Right(Set(c,t,e))
+      case Plus(l,r)          => Right(Set(l,r))
+      case Minus(l,r)         => Right(Set(l,r)) 
+      case UMinus(e)          => Right(Set(e))
+      case Times(l,r)         => Right(Set(l,r))
+      case Division(l,r)      => Right(Set(l,r))
+      case Modulo(l,r)        => Right(Set(l,r))
+      case LessThan(l,r)      => Right(Set(l,r))
+      case GreaterThan(l,r)   => Right(Set(l,r))
+      case LessEquals(l,r)    => Right(Set(l,r))
+      case GreaterEquals(l,r) => Right(Set(l,r)) 
+      case _                  => Left(e)
+    }
+
+    // Needs to be improved...
+    def isAcceptable(e : Expr) : Boolean = e match {
+      case Variable(_) => false
+      case IntLiteral(_) => false
+      case BooleanLiteral(_) => false
+      case _ => true
+    }
+
+    def breakFP(e : Expr) : Set[Expr] = {
+      var done : Set[Expr] = Set.empty
+      var left : Set[Expr] = Set(e)
+
+      while(!left.isEmpty) {
+        val broken = left.map(break)
+        left = Set.empty
+        for(e <- broken) e match {
+          case Left(ex)   => done += ex
+          case Right(exs) => left ++= exs
+        }
+      }
+      done
+    }
+    
+    val bits = breakFP(expr).filter(isAcceptable)
+    bits
   }
 }
