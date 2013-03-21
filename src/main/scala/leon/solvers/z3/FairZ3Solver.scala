@@ -585,7 +585,13 @@ class FairZ3Solver(context : LeonContext)
               solver.pop()  // FIXME: remove when z3 bug is fixed
               z3Time.stop
 
-              res2 match {
+              val adjustedForUnknowns = if(forceStop || !useLemmas) res2 else res2 match {
+                case Some(false) => Some(false)
+                case Some(true)  => Some(true) // not likely to happen, ever.
+                case None        => Some(true)
+              }
+
+              adjustedForUnknowns match {
                 case Some(false) =>
                   //reporter.info("UNSAT WITHOUT Blockers")
                   foundAnswer(Some(false), core = z3CoreToCore(solver.getUnsatCore))
@@ -603,6 +609,8 @@ class FairZ3Solver(context : LeonContext)
                   }
 
                 case None =>
+                  reporter.warning("Unknown w/o blockers?")
+                  reporter.warning("Z3 says [%s]".format(solver.getReasonUnknown))
                   foundAnswer(None)
               }
             }

@@ -83,6 +83,7 @@ trait Z3Lemmas {
       case Implies(l,r)       => Right(Set(l,r))
       case Iff(l,r)           => Right(Set(l,r))
       case IfExpr(c,t,e)      => Right(Set(c,t,e))
+      case Equals(l,r)        => Right(Set(l,r))
       case Plus(l,r)          => Right(Set(l,r))
       case Minus(l,r)         => Right(Set(l,r)) 
       case UMinus(e)          => Right(Set(e))
