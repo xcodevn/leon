@@ -609,8 +609,12 @@ class FairZ3Solver(context : LeonContext)
                   }
 
                 case None =>
-                  reporter.warning("Unknown w/o blockers?")
-                  reporter.warning("Z3 says [%s]".format(solver.getReasonUnknown))
+                  reporter.warning("Unknown w/o blockers.")
+                  if(forceStop) {
+                    reporter.warning("(Forced stop)")
+                  } else {
+                    reporter.warning("Z3 says [%s]".format(solver.getReasonUnknown))
+                  }
                   foundAnswer(None)
               }
             }

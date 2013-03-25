@@ -45,17 +45,30 @@ trait Z3Lemmas {
         // Also: Apply matchToIfThenElse and let-expansion
         val quantBody : Z3AST = toZ3Formula(matchToIfThenElse(lemmaBody), initialMap).get
 
-        val patternBits : Set[Expr] = mkMultiPattern(matchToIfThenElse(lemmaBody))
-        reporter.info("Tentative multi pattern for expression :")
-        reporter.info("--- " + funDef.getImplementation)
-        reporter.info("::")
-        reporter.info("--- " + patternBits.mkString("[",",","]"))
+        val varSet : Set[Identifier] = fArgs.map(_.id).toSet
+        val preMps : Set[Set[Expr]] = if(funDef.hasPrecondition) {
+          extractMultiPatterns(matchToIfThenElse(funDef.getPrecondition), varSet)
+        } else {
+          Set.empty
+        }
 
-        val multipattern : Z3Pattern = z3.mkPattern(
-          patternBits.toSeq.map(c => toZ3Formula(c, initialMap).get) : _*
-        )
+        val multiPatterns : Set[Set[Expr]] = if(!preMps.isEmpty) {
+          preMps
+        } else {
+          extractMultiPatterns(matchToIfThenElse(lemmaBody), varSet)
+        }
 
-        val axiom : Z3AST = z3.mkForAll(0, Seq(multipattern), namedBounds, quantBody)
+        reporter.info(" *** Multipatterns for lemma [%s].".format(fname))
+        val z3MultiPatterns = for(mp <- multiPatterns) yield {
+          reporter.info("--- ")
+          reporter.info("--- " + mp.mkString("[", "; ", "]"))
+      
+          z3.mkPattern(
+            mp.toSeq.map(c => toZ3Formula(c, initialMap).get) : _*
+          ) 
+        }
+
+        val axiom : Z3AST = z3.mkForAll(0, z3MultiPatterns.toSeq, namedBounds, quantBody)
 
         reporter.info("Look ! I made an axiom !")
         reporter.info(axiom.toString)
@@ -63,6 +76,7 @@ trait Z3Lemmas {
       }
     }
   }
+
 
   /* This attempts to find a good set of patterns ("multipatterns") that will work
    * with Z3 E-Matching algorithm. Here are the rules:
@@ -81,7 +95,7 @@ trait Z3Lemmas {
    *
    *     (Z3's pattern_inference.cpp has ~750 loc. That's encouraging.)
    */
-  private def mkMultiPattern(expr : Expr) : Set[Expr] = {
+  private def extractMultiPatterns(expr : Expr, vars : Set[Identifier]) : Set[Set[Expr]] = {
     def break(e : Expr) : Either[Expr,Set[Expr]] = e match {
       case And(es)            => Right(es.toSet)
       case Or(es)             => Right(es.toSet)
@@ -127,8 +141,21 @@ trait Z3Lemmas {
       }
       done
     }
+
+    def coversAll(exprs : Iterable[Expr]) : Boolean = {
+      !exprs.isEmpty && (exprs.map(variablesOf).reduceLeft(_ ++ _) == vars)
+    }
     
     val bits = breakFP(expr).filter(isAcceptable)
-    bits
+
+    var ok : Set[Set[Expr]] = Set.empty
+
+    for(bs <- bits.subsets) {
+      if(coversAll(bs) && ok.forall(x => !x.subsetOf(bs))) {
+        ok += bs
+      }
+    }
+
+    ok
   }
 }
