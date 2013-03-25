@@ -23,11 +23,17 @@ trait Z3Lemmas {
         reporter.error("Function [%s] is marked as a lemma but does not have a postcondition.".format(fname))
       } else if(funDef.getPostcondition != lemmaPost) {
         reporter.error("Invalid postcondition for lemma [%s].".format(fname))
-      } else if(funDef.hasPrecondition) {
-        reporter.error("Lemma [%s] should not have a precondition. Use an implication in the body instead.".format(fname))
+      } else if(!funDef.hasImplementation) {
+        reporter.error("Function [%s] is marked as a lemma but does not have a body.".format(fname))
       } else {
         // So this looks like a good lemma :D
         reporter.info("Yeepee! [%s] is a nice lemma!".format(fname))
+
+        val lemmaBody : Expr = funDef.precondition.map { pre =>
+          Implies(pre, funDef.getImplementation)
+        } getOrElse {
+          funDef.getImplementation
+        }
         
         val fArgs : Seq[Variable] = funDef.args.map(_.toVariable)
         val argSorts : Seq[Z3Sort] = fArgs.map(v => typeToSort(v.getType))
@@ -37,9 +43,9 @@ trait Z3Lemmas {
 
         // FIXME : that ".get" is bolder that we want it to be.
         // Also: Apply matchToIfThenElse and let-expansion
-        val quantBody : Z3AST = toZ3Formula(funDef.getImplementation, initialMap).get
+        val quantBody : Z3AST = toZ3Formula(matchToIfThenElse(lemmaBody), initialMap).get
 
-        val patternBits : Set[Expr] = mkMultiPattern(funDef.getImplementation)
+        val patternBits : Set[Expr] = mkMultiPattern(matchToIfThenElse(lemmaBody))
         reporter.info("Tentative multi pattern for expression :")
         reporter.info("--- " + funDef.getImplementation)
         reporter.info("::")
@@ -102,6 +108,8 @@ trait Z3Lemmas {
       case Variable(_) => false
       case IntLiteral(_) => false
       case BooleanLiteral(_) => false
+      case CaseClassInstanceOf(_,_) => false
+      case CaseClassSelector(_,_,_) => false
       case _ => true
     }
 
