@@ -85,7 +85,7 @@ class FairZ3Solver(context : LeonContext)
   // This is fixed.
   protected[leon] val z3cfg = new Z3Config(
     "MODEL" -> true,
-    "MBQI" -> false,
+    "MBQI" -> true,
     "TYPE_CHECK" -> true,
     "WELL_SORTED_CHECK" -> true
   )
@@ -478,6 +478,32 @@ class FairZ3Solver(context : LeonContext)
         }).toSet
       }
 
+      /* 
+       * Because z3 get timeout when we don't unrolling enough times, and when z3 timeout, every assertions gone way.
+       * So I use a trick to workaround this by pre-unrolling enough times for some special example, so I can focus on the
+       * main error of Leon
+       */
+      val times_of_preunrolling: Int = 0
+      var count = 0
+      reporter.info("Pre-unrolling " + times_of_preunrolling + " times")
+      while (count < times_of_preunrolling) {
+              val toRelease = unrollingBank.getZ3BlockersToUnlock
+
+              for(id <- toRelease) {
+                unlockingTime.start
+                val newClauses = unrollingBank.unlock(id)
+                unlockingTime.stop
+
+                unrollingTime.start
+                for(ncl <- newClauses) {
+                  solver.assertCnstr(ncl)
+                }
+                unrollingTime.stop
+              }
+              count = count + 1
+      }
+
+
       while(!foundDefinitiveAnswer && !forceStop) {
 
         //val blockingSetAsZ3 : Seq[Z3AST] = blockingSet.toSeq.map(toZ3Formula(_).get)
@@ -485,13 +511,14 @@ class FairZ3Solver(context : LeonContext)
 
         reporter.info(" - Running Z3 search...")
 
-        // reporter.info("Searching in:\n"+solver.getAssertions.toSeq.mkString("\nAND\n"))
-        // reporter.info("Unroll.  Assumptions:\n"+unrollingBank.z3CurrentZ3Blockers.mkString("  &&  "))
-        // reporter.info("Userland Assumptions:\n"+assumptionsAsZ3.mkString("  &&  "))
+        reporter.info("Searching in:\n"+solver.getAssertions.toSeq.mkString(")\n(assert "))
+        reporter.info("Unroll.  Assumptions:\n"+unrollingBank.z3CurrentZ3Blockers.mkString(")\n(assert "))
+        reporter.info("Userland Assumptions:\n"+assumptionsAsZ3.mkString(")\n(assert "))
 
         z3Time.start
         solver.push() // FIXME: remove when z3 bug is fixed
-        val res = solver.checkAssumptions((assumptionsAsZ3 ++ unrollingBank.z3CurrentZ3Blockers) :_*)
+       // val res = solver.checkAssumptions((assumptionsAsZ3 ++ unrollingBank.z3CurrentZ3Blockers) :_*)
+        val res = solver.checkAssumptions(assumptionsAsZ3 : _*)
         solver.pop()  // FIXME: remove when z3 bug is fixed
         z3Time.stop
 
@@ -504,6 +531,7 @@ class FairZ3Solver(context : LeonContext)
             foundAnswer(None)
 
           case Some(true) => // SAT
+            reporter.info("SAT")
 
             val z3model = solver.getModel
 
@@ -539,7 +567,7 @@ class FairZ3Solver(context : LeonContext)
           // distinction is made inside.
           case Some(false) =>
 
-            val z3Core = solver.getUnsatCore
+            reporter.info("UNSAT") 
 
             def coreElemToBlocker(c: Z3AST): (Z3AST, Boolean) = {
               z3.getASTKind(c) match {
@@ -593,10 +621,10 @@ class FairZ3Solver(context : LeonContext)
 
               adjustedForUnknowns match {
                 case Some(false) =>
-                  //reporter.info("UNSAT WITHOUT Blockers")
+                  reporter.info("UNSAT WITHOUT Blockers")
                   foundAnswer(Some(false), core = z3CoreToCore(solver.getUnsatCore))
                 case Some(true) =>
-                  //reporter.info("SAT WITHOUT Blockers")
+                  reporter.info("SAT WITHOUT Blockers")
                   if (this.feelingLucky && !forceStop) {
                     // we might have been lucky :D
                     luckyTime.start
