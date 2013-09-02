@@ -613,7 +613,7 @@ class FairZ3Solver(context : LeonContext)
                   if(forceStop) {
                     reporter.warning("(Forced stop)")
                   } else {
-                    reporter.warning("Z3 says [%s]".format(solver.getReasonUnknown))
+                    // reporter.warning("Z3 says [%s]".format(solver.getReasonUnknown))
                   }
                   foundAnswer(None)
               }
