@@ -187,6 +187,7 @@ trait CodeExtraction extends Extractors {
             a.atp.safeToString match {
               case "leon.Annotations.induct"     => funDef.addAnnotation("induct")
               case "leon.Annotations.axiomatize" => funDef.addAnnotation("axiomatize")
+              case "leon.Annotations.lemma"      => funDef.addAnnotation("lemma")
               case "leon.Annotations.main"       => funDef.addAnnotation("main")
               case _ => ;
             }

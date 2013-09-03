@@ -25,19 +25,22 @@ class FairZ3Solver(context : LeonContext)
   extends Solver(context)
      with AbstractZ3Solver
      with Z3ModelReconstruction
-     with FairZ3Component {
+     with FairZ3Component
+     with Z3Lemmas
+     with LeonComponent {
 
   enclosing =>
 
   def debug(s: String) = context.reporter.debug(ReportingSolver)(s)
 
   // What wouldn't we do to avoid defining vars?
-  val (feelingLucky, checkModels, useCodeGen, evalGroundApps, unrollUnsatCores) = locally {
+  val (feelingLucky, checkModels, useCodeGen, evalGroundApps, unrollUnsatCores, useLemmas) = locally {
     var lucky            = false
     var check            = false
     var codegen          = false
     var evalground       = false
     var unrollUnsatCores = false
+    var lemmas           = false
 
     for(opt <- context.options) opt match {
       case LeonFlagOption("checkmodels", v)        => check            = v
@@ -45,10 +48,11 @@ class FairZ3Solver(context : LeonContext)
       case LeonFlagOption("codegen", v)            => codegen          = v
       case LeonFlagOption("evalground", v)         => evalground       = v
       case LeonFlagOption("fairz3:unrollcores", v) => unrollUnsatCores = v
+      case LeonFlagOption("lemmas")             => lemmas           = true
       case _ =>
     }
 
-    (lucky, check, codegen, evalground, unrollUnsatCores)
+    (lucky, check, codegen, evalground, unrollUnsatCores, lemmas)
   }
 
   private var evaluator : Evaluator = null
@@ -365,15 +369,13 @@ class FairZ3Solver(context : LeonContext)
     private val feelingLucky = enclosing.feelingLucky
     private val checkModels  = enclosing.checkModels
     private val useCodeGen   = enclosing.useCodeGen
+    private val useLemmas    = enclosing.useLemmas
 
     initZ3
 
     val solver = z3.mkSolver
-
-    for(funDef <- program.definedFunctions) {
-      if (funDef.annotations.contains("axiomatize") && !axiomatizedFunctions(funDef)) {
-        reporter.warning("Function " + funDef.id + " was marked for axiomatization but could not be handled.")
-      }
+    if(useLemmas) {
+      prepareLemmas(solver)
     }
 
     private var varsInVC = Set[Identifier]()
@@ -576,7 +578,13 @@ class FairZ3Solver(context : LeonContext)
               solver.pop()  // FIXME: remove when z3 bug is fixed
               z3Time.stop
 
-              res2 match {
+              val adjustedForUnknowns = if(forceStop || !useLemmas) res2 else res2 match {
+                case Some(false) => Some(false)
+                case Some(true)  => Some(true) // not likely to happen, ever.
+                case None        => Some(true)
+              }
+
+              adjustedForUnknowns match {
                 case Some(false) =>
                   //debug("UNSAT WITHOUT Blockers")
                   foundAnswer(Some(false), core = z3CoreToCore(solver.getUnsatCore))
@@ -594,6 +602,12 @@ class FairZ3Solver(context : LeonContext)
                   }
 
                 case None =>
+                  reporter.warning("Unknown w/o blockers.")
+                  if(forceStop) {
+                    reporter.warning("(Forced stop)")
+                  } else {
+                    reporter.warning("Z3 says [%s]".format(solver.getReasonUnknown))
+                  }
                   foundAnswer(None)
               }
             }
