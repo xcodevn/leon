@@ -11,3 +11,6 @@ target
 
 # synthesis
 derivation*.dot
+
+# for testing purpose, I have to re-compile this library
+unmanaged/64/scalaz3_2.10-2.0.jar

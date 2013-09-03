@@ -11,7 +11,7 @@ import purescala.Common._
 trait Z3Lemmas {
   self : AbstractZ3Solver =>
 
-  private lazy val lemmaPost : Expr = ResultVariable().setType(BooleanType)
+  private lazy val lemmaPost = FreshIdentifier("res").setType(BooleanType)
 
   def prepareLemmas(solver : Z3Solver) : Unit = {
     for(funDef <- program.definedFunctions if funDef.annotations.contains("lemma")) {
@@ -19,20 +19,23 @@ trait Z3Lemmas {
 
       if(!(funDef.returnType == BooleanType)) {
         reporter.error("Function [%s] is marked as a lemma but is not a predicate.".format(fname))
-      } else if(!funDef.hasPostcondition) {
-        reporter.error("Function [%s] is marked as a lemma but does not have a postcondition.".format(fname))
-      } else if(funDef.getPostcondition != lemmaPost) {
-        reporter.error("Invalid postcondition for lemma [%s].".format(fname))
-      } else if(!funDef.hasImplementation) {
-        reporter.error("Function [%s] is marked as a lemma but does not have a body.".format(fname))
       } else {
-        // So this looks like a good lemma :D
-        reporter.info("Yeepee! [%s] is a nice lemma!".format(fname))
+        funDef.postcondition match {
+          case None =>
+            reporter.error("Function [%s] is marked as a lemma but does not have a postcondition.".format(fname))
+          case Some(post) =>
+              reporter.warning("FIXME: Now we don't check if the lemmas return a boolean value or not!")
+              funDef.implementation match {
+                  case None =>
+                    reporter.error("Function [%s] is marked as a lemma but does not have a body.".format(fname))
+                  case Some(imple) =>
+                    // So this looks like a good lemma :D
+                    reporter.info("Yeepee! [%s] is a nice lemma!".format(fname))
 
         val lemmaBody : Expr = funDef.precondition.map { pre =>
-          Implies(pre, funDef.getImplementation)
+          Implies(pre, imple)
         } getOrElse {
-          funDef.getImplementation
+          imple
         }
         
         val fArgs : Seq[Variable] = funDef.args.map(_.toVariable)
@@ -46,10 +49,11 @@ trait Z3Lemmas {
         val quantBody : Z3AST = toZ3Formula(matchToIfThenElse(lemmaBody), initialMap).get
 
         val varSet : Set[Identifier] = fArgs.map(_.id).toSet
-        val preMps : Set[Set[Expr]] = if(funDef.hasPrecondition) {
-          extractMultiPatterns(matchToIfThenElse(funDef.getPrecondition), varSet)
-        } else {
-          Set.empty
+        val preMps : Set[Set[Expr]] = funDef.precondition match {
+          case Some(precond) =>
+            extractMultiPatterns(matchToIfThenElse(precond), varSet)
+          case None =>
+            Set.empty
         }
 
         val multiPatterns : Set[Set[Expr]] = if(!preMps.isEmpty) {
@@ -73,7 +77,7 @@ trait Z3Lemmas {
         reporter.info("Look ! I made an axiom !")
         reporter.info(axiom.toString)
         solver.assertCnstr(axiom)
-      }
+      }}}
     }
   }
 
