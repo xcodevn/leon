@@ -478,7 +478,7 @@ class FairZ3Solver(context : LeonContext)
        */
       val times_of_preunrolling: Int = 0
       var count = 0
-      reporter.info("Pre-unrolling " + times_of_preunrolling + " times")
+      debug("Pre-unrolling " + times_of_preunrolling + " times")
       while (count < times_of_preunrolling) {
               val toRelease = unrollingBank.getZ3BlockersToUnlock
 
@@ -504,9 +504,9 @@ class FairZ3Solver(context : LeonContext)
 
         debug(" - Running Z3 search...")
 
-        //debug("Searching in:\n"+solver.getAssertions.toSeq.mkString(")\n(assert "))
-        //debug("Unroll.  Assumptions:\n"+unrollingBank.z3CurrentZ3Blockers.mkString(")\n(assert "))
-        //debug("Userland Assumptions:\n"+assumptionsAsZ3.mkString(")\n(assert "))
+        debug("Searching in:\n"+solver.getAssertions.toSeq.mkString(")\n(assert "))
+        debug("Unroll.  Assumptions:\n"+unrollingBank.z3CurrentZ3Blockers.mkString(")\n(assert "))
+        debug("Userland Assumptions:\n"+assumptionsAsZ3.mkString(")\n(assert "))
 
         z3Time.start
         solver.push() // FIXME: remove when z3 bug is fixed
