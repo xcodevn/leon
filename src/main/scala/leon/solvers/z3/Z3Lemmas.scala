@@ -62,17 +62,26 @@ trait Z3Lemmas {
           extractMultiPatterns(matchToIfThenElse(lemmaBody), varSet)
         }
 
+        def flatten(xs: List[Any]): List[Any] = xs match {
+          case Nil => Nil
+          case (head: List[_]) :: tail => flatten(head) ++ flatten(tail)
+          case head :: tail => head :: flatten(tail)
+        }
+
         reporter.info(" *** Multipatterns for lemma [%s].".format(fname))
-        val z3MultiPatterns = for(mp <- multiPatterns) yield {
+        val lst = for(mp <- multiPatterns) yield {
           reporter.info("--- ")
           reporter.info("--- " + mp.mkString("[", "; ", "]"))
       
-          z3.mkPattern(
-            mp.toSeq.map(c => toZ3Formula(c, initialMap).get) : _*
-          ) 
+          mp.toSeq.map(c => toZ3Formula(c, initialMap).get)
         }
 
-        val axiom : Z3AST = z3.mkForAll(0, z3MultiPatterns.toSeq, namedBounds, quantBody)
+
+        reporter.info(lst.toSeq)
+
+        val z3MultiPatterns = z3.mkPattern(lst.toSeq.flatten : _*)
+
+        val axiom : Z3AST = z3.mkForAll(0, Seq(z3MultiPatterns), namedBounds, quantBody)
 
         reporter.info("Look ! I made an axiom !")
         reporter.info(axiom.toString)

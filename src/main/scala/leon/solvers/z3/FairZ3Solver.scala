@@ -496,6 +496,7 @@ class FairZ3Solver(context : LeonContext)
               count = count + 1
       }
 
+      z3.setAstPrintMode(Z3Context.AstPrintMode.Z3_PRINT_SMTLIB2_COMPLIANT)
       while(!foundDefinitiveAnswer && !forceStop) {
 
         //val blockingSetAsZ3 : Seq[Z3AST] = blockingSet.toSeq.map(toZ3Formula(_).get)
@@ -503,9 +504,9 @@ class FairZ3Solver(context : LeonContext)
 
         debug(" - Running Z3 search...")
 
-        debug("Searching in:\n"+solver.getAssertions.toSeq.mkString(")\n(assert "))
-        debug("Unroll.  Assumptions:\n"+unrollingBank.z3CurrentZ3Blockers.mkString(")\n(assert "))
-        debug("Userland Assumptions:\n"+assumptionsAsZ3.mkString(")\n(assert "))
+        //debug("Searching in:\n"+solver.getAssertions.toSeq.mkString(")\n(assert "))
+        //debug("Unroll.  Assumptions:\n"+unrollingBank.z3CurrentZ3Blockers.mkString(")\n(assert "))
+        //debug("Userland Assumptions:\n"+assumptionsAsZ3.mkString(")\n(assert "))
 
         z3Time.start
         solver.push() // FIXME: remove when z3 bug is fixed
