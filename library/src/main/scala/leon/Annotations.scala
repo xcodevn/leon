@@ -9,4 +9,5 @@ object Annotations {
   class axiomatize extends StaticAnnotation
   class main extends StaticAnnotation
   class lemma extends StaticAnnotation
+  class depend(lemmas: String*) extends StaticAnnotation
 }

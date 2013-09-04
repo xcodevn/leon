@@ -11,6 +11,7 @@ trait FairZ3Component extends LeonComponent {
     LeonFlagOptionDef("feelinglucky",       "--feelinglucky",       "Use evaluator to find counter-examples early"),
     LeonFlagOptionDef("codegen",            "--codegen",            "Use compiled evaluator instead of interpreter"),
     LeonFlagOptionDef("fairz3:unrollcores", "--fairz3:unrollcores", "Use unsat-cores to drive unrolling while remaining fair"),
-    LeonFlagOptionDef("lemmas",             "--lemmas",             "Magical lemma mystery train")
+    LeonFlagOptionDef("lemmas",             "--lemmas",             "Magical lemma mystery train"),
+    LeonFlagOptionDef("training",           "--training",           "Training leon by using @depend()")
   )
 }

@@ -5,9 +5,7 @@ package plugin
 
 import scala.tools.nsc._
 import scala.tools.nsc.plugins._
-
 import scala.language.implicitConversions
-
 import purescala.Definitions._
 import purescala.Trees.{Expr => LeonExpr, _}
 import xlang.Trees.{Block => LeonBlock, _}
@@ -15,6 +13,7 @@ import xlang.TreeOps._
 import purescala.TypeTrees.{TypeTree => LeonType, _}
 import purescala.Common._
 import purescala.TreeOps._
+import leon.Annotations
 
 trait CodeExtraction extends Extractors {
   self: LeonExtraction =>
@@ -183,12 +182,17 @@ trait CodeExtraction extends Extractors {
             funDef.addAnnotation("private")
           }
 
-          for(a <- dd.symbol.annotations) {
+          for(a <- dd.symbol.annotations) {           
             a.atp.safeToString match {
               case "leon.Annotations.induct"     => funDef.addAnnotation("induct")
               case "leon.Annotations.axiomatize" => funDef.addAnnotation("axiomatize")
               case "leon.Annotations.lemma"      => funDef.addAnnotation("lemma")
               case "leon.Annotations.main"       => funDef.addAnnotation("main")
+              case "leon.Annotations.depend"     => {
+                funDef.addAnnotation("depend")
+                funDef.dependencies = Option(a.args.map(_.toString))
+                println(funDef.dependencies)
+              }
               case _ => ;
             }
           }
