@@ -78,7 +78,7 @@ class FairZ3Solver(context : LeonContext)
   // This is fixed.
   protected[leon] val z3cfg = new Z3Config(
     "MODEL" -> true,
-    "MBQI" -> false,
+    "MBQI" -> true,
     "TYPE_CHECK" -> true,
     "WELL_SORTED_CHECK" -> true
   )
@@ -510,7 +510,8 @@ class FairZ3Solver(context : LeonContext)
 
         z3Time.start
         solver.push() // FIXME: remove when z3 bug is fixed
-        val res = solver.checkAssumptions((assumptionsAsZ3 ++ unrollingBank.z3CurrentZ3Blockers) :_*)
+       // val res = solver.checkAssumptions((assumptionsAsZ3 ++ unrollingBank.z3CurrentZ3Blockers) :_*)
+        val res = solver.checkAssumptions(assumptionsAsZ3 : _*)
         solver.pop()  // FIXME: remove when z3 bug is fixed
         z3Time.stop
 
@@ -523,6 +524,7 @@ class FairZ3Solver(context : LeonContext)
             foundAnswer(None)
 
           case Some(true) => // SAT
+            reporter.info("SAT")
 
             debug("SAT")
 
@@ -636,7 +638,7 @@ class FairZ3Solver(context : LeonContext)
                   if(forceStop) {
                     reporter.warning("(Forced stop)")
                   } else {
-                    reporter.warning("Z3 says [%s]".format(solver.getReasonUnknown))
+                    // reporter.warning("Z3 says [%s]".format(solver.getReasonUnknown))
                   }
                   foundAnswer(None)
               }
