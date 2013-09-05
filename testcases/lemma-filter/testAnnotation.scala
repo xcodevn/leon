@@ -3,10 +3,11 @@
 */
 import leon.Utils._
 import leon.Annotations._
+import scala.language.postfixOps
 
 object ReverseList {
   sealed abstract class List
-  case class Nil extends List
+  case class Nil() extends List
   case class Cons(head: Int, tail: List) extends List
   
   def app(l1: List, l2: List): List = l1 match {

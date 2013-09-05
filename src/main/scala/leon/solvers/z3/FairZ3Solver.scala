@@ -27,6 +27,7 @@ class FairZ3Solver(context : LeonContext)
      with Z3ModelReconstruction
      with FairZ3Component
      with Z3Lemmas
+     with Z3Training
      with LeonComponent {
 
   enclosing =>
@@ -377,13 +378,14 @@ class FairZ3Solver(context : LeonContext)
     initZ3
 
     val solver = z3.mkSolver
+
     if(useLemmas) {
       prepareLemmas(solver)
     }
     
     if (doTraining) {
       reporter.info("Training Leon system by using knowledge from the user (@depend annotation)")      
-      debug("FIXME: Create new class for interacting with MaSh")
+      train // call our train function, a wrapper I mean so!
     }
 
     private var varsInVC = Set[Identifier]()
