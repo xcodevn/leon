@@ -21,6 +21,8 @@ import termination._
 import scala.collection.mutable.{Map => MutableMap}
 import scala.collection.mutable.{Set => MutableSet}
 
+import leon.solvers.lemmafilter.Z3Training
+
 class FairZ3Solver(context : LeonContext)
   extends Solver(context)
      with AbstractZ3Solver
@@ -367,6 +369,31 @@ class FairZ3Solver(context : LeonContext)
     }
   }
 
+  /* 
+  * An auxiliary function for Training 
+  * I have no idea how to make it more easier
+  * For now, We attach this function into Training trail for doing un-fold jobs
+  * 
+  * Some improvement ideas:
+  *   - Put all training trail into this file !!
+  *   - ...
+  */
+  def unfold(expr: Expr, times: Int): Seq[Z3AST] = {
+    val unrollingBank = new UnrollingBank()
+    val newClauses = unrollingBank.scanForNewTemplates(expr)
+
+    val cl = for (c <- 0 until times) yield {
+      val toRelease = unrollingBank.getZ3BlockersToUnlock
+
+      val kk = for (id <- toRelease) yield {
+        unrollingBank.unlock(id)
+      }
+      kk.flatten
+    }
+
+    newClauses ++ cl.flatten
+  }
+
   def getNewSolver = new solvers.IncrementalSolver {
     private val evaluator    = enclosing.evaluator
     private val feelingLucky = enclosing.feelingLucky
@@ -385,7 +412,7 @@ class FairZ3Solver(context : LeonContext)
     
     if (doTraining) {
       reporter.info("Training Leon system by using knowledge from the user (@depend annotation)")      
-      train // call our train function, a wrapper I mean so!
+      train(unfold) // call our train function, a wrapper I mean so!
     }
 
     private var varsInVC = Set[Identifier]()

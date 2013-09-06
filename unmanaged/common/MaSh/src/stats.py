@@ -117,7 +117,7 @@ class Statistics(object):
     def printAvg(self):
         self.logger.info('Average results:')
         self.logger.info('avgAUC: %s \t avgDepNr: %s \t avgRecall100: %s \t cutOff:%s', \
-                         round(100*self.avgAUC/self.problems,2),round(self.avgDepNr/self.problems,2),round(self.avgRecall100/self.problems,2),self.cutOff)
+                         round((1+100*self.avgAUC)/(1+self.problems),2),round((1+self.avgDepNr)/(1+self.problems),2),round((1+self.avgRecall100)/(1+self.problems),2),self.cutOff)
 
         #try:
         #if True:

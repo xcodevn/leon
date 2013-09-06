@@ -1,5 +1,6 @@
 package leon
-package solvers.lemmafilter
+package solvers
+package lemmafilter
 
 import purescala.Common._
 import purescala.Definitions._

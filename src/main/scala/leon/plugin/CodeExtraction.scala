@@ -190,7 +190,7 @@ trait CodeExtraction extends Extractors {
               case "leon.Annotations.main"       => funDef.addAnnotation("main")
               case "leon.Annotations.depend"     => {
                 funDef.addAnnotation("depend")
-                funDef.dependencies = Option(a.args.map(_.toString))
+                funDef.dependencies = Option(a.args.map(_.toString).toSet)
                 println(funDef.dependencies)
               }
               case _ => ;
