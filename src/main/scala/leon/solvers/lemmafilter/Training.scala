@@ -26,6 +26,7 @@ trait Z3Training {
    * Hmmm, I don't think this function returns a VC, I want it return the body of function (property), So I can unfold it and then extract features
    */
   def genVC(funDef: FunDef): Expr = {
+    reporter.warning("FIXME: We need a real VC, not just function's body")
     def getImple() = funDef.implementation match {
       case Some(r) => r
       case _ => Error("Error")
@@ -60,7 +61,50 @@ trait Z3Training {
      *              Anything else related to Z3AST, TreeOps, Trees, might be helpful
      *   
      */
-    Set()
+
+
+    def trim(name: String) = name.split("!")(0)
+    
+    def get1LFeature(tree: Z3AST): String = {
+      z3.getASTKind(tree) match {
+        case Z3AppAST(decl, args) =>
+          if (isKnownDecl(decl)) {
+            trim(decl.getName.toString)
+          } else {
+            import Z3DeclKind._
+            z3.getDeclKind(decl) match {
+              case OpTrue   => "const_true" // println("new constant TRUE")
+              case OpFalse  => "const_false" // println("new constant FALSE")
+              case Other    => trim(decl.getName.toString)
+              case _        => "" // Empty
+            }
+          }
+
+        case Z3NumeralAST(Some(v)) => "const_%d".format(v)
+       
+        case _ => "" // Empty
+      }
+    }
+
+    /* Until now, we only yield set of strings, need improvement in future for weigth of these string */
+    def rec(tree: Z3AST):Set[String] = {
+      val s1 = get1LFeature(tree)
+      val c2:(Set[String], String) = z3.getASTKind(tree) match {
+        case Z3AppAST(decl, args) => 
+          ( {for (subtree <- args) yield { rec(subtree) } }.flatten.toSet, 
+            {val seq =  for (subtree <- args) yield { get1LFeature(subtree) }
+                 seq.filter(s => s.length > 0).mkString(",")})
+        case _ => (Set[String]() , "")
+      }
+      c2 match {
+        case (s2, para) => 
+          if (para.length > 0) Set(s1) ++ s2 ++ { if (s1.length > 0) Set("%s(%s)".format(s1, para)) else Set() }
+          else Set(s1) ++ s2 
+      }
+    }
+    
+    /* Now, the momment for return set of feature with (equal, now) weight :-) */
+    { for (tree <- lst) yield { rec(tree) } }.flatten.filter(s=> s.length > 0).map(s => (s, 1.0)).toSet    
   }
 
   /*
@@ -72,9 +116,12 @@ trait Z3Training {
 
     for (funDef <- program.definedFunctions if funDef.annotations.contains("depend")) {
       val funName = funDef.id.name.toString()
-      val parents = "FIXME:_Don't_understand_how_to_use_this" // I believe we have a way to use this function to improve our filter
-        												      // but now, I even also don't know how to use it in the right way
-      val features = getFeatureSet(unfold(genVC(funDef), 2))
+
+      // I believe we have a way to use this function to improve our filter
+      // but now, I even also don't know how to use it in the right way
+      val parents = "FIXME:_Don't_understand_how_to_use_this" 
+      val features = getFeatureSet(unfold(genVC(funDef), 3))
+      reporter.info("Congrats. Below is our set of features:\n["+features.mkString(",\n") + "]\n")
 
       val deps = funDef.dependencies match {
         case Some(dep) => dep

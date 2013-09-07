@@ -53,7 +53,7 @@ class FairZ3Solver(context : LeonContext)
       case LeonFlagOption("evalground", v)         => evalground       = v
       case LeonFlagOption("fairz3:unrollcores", v) => unrollUnsatCores = v
       case LeonFlagOption("lemmas", v)             => lemmas           = v
-      case LeonFlagOption("training", v)          => training         = v
+      case LeonFlagOption("training", v)           => training         = v
       case _ =>
     }
 
@@ -83,7 +83,8 @@ class FairZ3Solver(context : LeonContext)
   // This is fixed.
   protected[leon] val z3cfg = new Z3Config(
     "MODEL" -> true,
-    "MBQI" -> false,
+    "MBQI" -> true,                // turn off this one when done with pattern problem
+    "SMTLIB2_COMPLIANT" -> true,   // output as SMT2 format
     "TYPE_CHECK" -> true,
     "WELL_SORTED_CHECK" -> true
   )
