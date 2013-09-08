@@ -1,11 +1,9 @@
-package leon
-package solvers
-package lemmafilter.mash
+package leon.solvers.lemmafilter.mash
 
 import java.io._
 import scala.io._
 
-object mash {
+object MaSh {
   /*
    * This is a low-level wrapper for MaSh
    * 

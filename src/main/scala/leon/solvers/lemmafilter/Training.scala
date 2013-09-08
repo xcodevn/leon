@@ -8,6 +8,7 @@ import leon.purescala.TreeOps._
 import leon.purescala.TypeTrees._
 import leon.purescala.Common._
 import leon.purescala.Definitions._
+import leon.solvers.lemmafilter.mash._
 
 trait Z3Training {
   /*
@@ -111,8 +112,9 @@ trait Z3Training {
    * Train MaSh by the user annotation (@depend)
    */
   def train(unfold: (Expr, Int) => Seq[Z3AST]) = {
-    reporter.warning("FIXME: Remember to unlearn before running any testcase !")
-    reporter.warning("FIXME: I don't check if lemma dependencies are correct or not")
+    // reporter.warning("FIXME: Remember to unlearn before running any testcase !")
+    MaSh.unlearn      // FIXME: Delete this line after done with Testing
+    // reporter.warning("FIXME: I don't check if lemma dependencies are correct or not")
 
     for (funDef <- program.definedFunctions if funDef.annotations.contains("depend")) {
       val funName = funDef.id.name.toString()
@@ -120,15 +122,22 @@ trait Z3Training {
       // I believe we have a way to use this function to improve our filter
       // but now, I even also don't know how to use it in the right way
       val parents = "FIXME:_Don't_understand_how_to_use_this" 
-      val features = getFeatureSet(unfold(genVC(funDef), 3))
+      val features = getFeatureSet(unfold(genVC(funDef), 1))
       reporter.info("Congrats. Below is our set of features:\n["+features.mkString(",\n") + "]\n")
 
       val deps = funDef.dependencies match {
-        case Some(dep) => dep
+        case Some(dep) =>
+          val SetLemmaName = program.definedFunctions.filter(f => LemmaTools.isTrueLemma(f)).map(_.id.name.toString()).toSet
+          println("Lemma: " + SetLemmaName)
+          for (d <- dep) {
+            if (!SetLemmaName.contains(d))
+              reporter.error("%s is NOT a real lemma".format(d))
+          }
+          dep.filter(d => SetLemmaName.contains(d))
         case None => Set[String]()
       }
       
-      mash.mash.learn(funName, parents, features, deps)
+      MaSh.learn(funName, parents, features, deps)
     }
 
     /*

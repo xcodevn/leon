@@ -190,8 +190,8 @@ trait CodeExtraction extends Extractors {
               case "leon.Annotations.main"       => funDef.addAnnotation("main")
               case "leon.Annotations.depend"     => {
                 funDef.addAnnotation("depend")
-                funDef.dependencies = Option(a.args.map(_.toString).toSet)
-                println(funDef.dependencies)
+                // I knew that it is a Literal but don't know doing in safely way :[
+                funDef.dependencies = Option(a.args.map(_.asInstanceOf[Literal].value.stringValue).toSet)
               }
               case _ => ;
             }

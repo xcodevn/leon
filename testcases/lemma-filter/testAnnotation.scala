@@ -20,11 +20,13 @@ object ReverseList {
     case Cons(h, t) => app(rec(t), Cons(h, Nil()))
   }
   
-  def app_nil(l: List): Boolean = { app(l, Nil()) == l } 
+  @lemma
+  @induct
+  def app_nil(l: List): Boolean = { app(l, Nil()) == l } holds
 
-  def plus2(x: Int) = { x + 2 }
+  def plus2(x: Int) = { x + 2 } 
   
-  @depend("app_nil","app_nil2", "app(Nil(),Nil())")
+  @depend("app_nil","plus2", "app(Nil(),Nil())")
   def run_rec_app_nil(l: List): Boolean = {
     l match {
       case Nil() => app_nil(l)
