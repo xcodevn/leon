@@ -54,11 +54,13 @@ object MaSh {
     val cmd = "! %s: %s; %s; %s".format(fact, parents, features.map(feature2String(_)).mkString(" "), proof.mkString(" "))
     // reporter.info("Running Mash command: " + cmd)
     // reporter.info("Result: " + run(cmd))
+    run(cmd)
   }
 
   def relearn(fact: String, proof: Set[String]) = {
     val cmd = "p %s: %s".format(fact, proof.mkString(" "))
     // reporter.info("Result: " + run(cmd))
+    run(cmd)
   }
 
   def str2Suggest(in: String): Set[(String, Double)] = {

@@ -60,6 +60,7 @@ class FairZ3Solver(context : LeonContext)
     (lucky, check, codegen, evalground, unrollUnsatCores, lemmas, training)
   }
 
+  private var isTrained : Boolean   = false
   private var evaluator : Evaluator = null
   protected[z3] def getEvaluator : Evaluator = evaluator
 
@@ -412,9 +413,10 @@ class FairZ3Solver(context : LeonContext)
       prepareLemmas(solver)
     }
     
-    if (doTraining) {
+    if (doTraining && !isTrained) {
       reporter.info("Training Leon system by using knowledge from the user (@depend annotation)")      
       train(unfold) // call our train function, a wrapper I mean so!
+      isTrained = true
     }
 
     private var varsInVC = Set[Identifier]()

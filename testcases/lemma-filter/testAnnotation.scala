@@ -33,5 +33,8 @@ object ReverseList {
       case Cons(h, t) => run_rec_app_nil(t)  && app_nil(l)  && Cons(12, l) == Cons(plus2(10), l)
     } 
   } holds
+
+  @lemma
+  def equal4(n: Int): Boolean = { n == 4 + (n-3) + 1 && plus2(5) == 7} holds
   
 }
