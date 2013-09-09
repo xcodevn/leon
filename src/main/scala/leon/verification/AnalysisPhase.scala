@@ -14,13 +14,16 @@ import solvers.z3.FairZ3Solver
 
 import scala.collection.mutable.{Set => MutableSet}
 
+import leon.solvers.lemmafilter._
+
 object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
   val name = "Analysis"
   val description = "Leon Verification"
 
   override val definedOptions : Set[LeonOptionDef] = Set(
     LeonValueOptionDef("functions", "--functions=f1:f2", "Limit verification to f1,f2,..."),
-    LeonValueOptionDef("timeout",   "--timeout=T",       "Timeout after T seconds when trying to prove a verification condition.")
+    LeonValueOptionDef("timeout",   "--timeout=T",       "Timeout after T seconds when trying to prove a verification condition."),
+    LeonFlagOptionDef("training",           "--training",           "Train leon by using @depend()")
   )
 
   def generateVerificationConditions(reporter: Reporter, program: Program, functionsToAnalyse: Set[String]): Map[FunDef, List[VerificationCondition]] = {
@@ -135,6 +138,7 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
   def run(ctx: LeonContext)(program: Program) : VerificationReport = {
     var functionsToAnalyse   = Set[String]()
     var timeout: Option[Int] = None
+    var doTraining: Boolean = false
 
     for(opt <- ctx.options) opt match {
       case LeonValueOption("functions", ListValue(fs)) =>
@@ -143,6 +147,8 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
       case v @ LeonValueOption("timeout", _) =>
         timeout = v.asInt(ctx)
 
+      case LeonFlagOption("training", v) => doTraining = v
+
       case _ =>
     }
 
@@ -150,6 +156,12 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
 
     val trivialSolver = new TrivialSolver(ctx)
     val fairZ3 = new FairZ3Solver(ctx)
+
+    if (doTraining) {
+      reporter.info("Training MaSh Filter from user guide...")
+      val MaShFilter = new MaShFilter(ctx, program)
+      MaShFilter.train
+    }
 
     val solvers0 : Seq[Solver] = trivialSolver :: fairZ3 :: Nil
     val solvers: Seq[Solver] = timeout match {

@@ -29,7 +29,6 @@ class FairZ3Solver(context : LeonContext)
      with Z3ModelReconstruction
      with FairZ3Component
      with Z3Lemmas
-     with Z3Training
      with LeonComponent {
 
   enclosing =>
@@ -37,14 +36,14 @@ class FairZ3Solver(context : LeonContext)
   def debug(s: String) = context.reporter.debug(ReportingSolver)(s)
 
   // What wouldn't we do to avoid defining vars?
-  val (feelingLucky, checkModels, useCodeGen, evalGroundApps, unrollUnsatCores, useLemmas, doTraining) = locally {
+  val (feelingLucky, checkModels, useCodeGen, evalGroundApps, unrollUnsatCores, useLemmas/*, doTraining*/) = locally {
     var lucky            = false
     var check            = false
     var codegen          = false
     var evalground       = false
     var unrollUnsatCores = false
     var lemmas           = false
-    var training         = false
+    // var training         = false
 
     for(opt <- context.options) opt match {
       case LeonFlagOption("checkmodels", v)        => check            = v
@@ -53,14 +52,14 @@ class FairZ3Solver(context : LeonContext)
       case LeonFlagOption("evalground", v)         => evalground       = v
       case LeonFlagOption("fairz3:unrollcores", v) => unrollUnsatCores = v
       case LeonFlagOption("lemmas", v)             => lemmas           = v
-      case LeonFlagOption("training", v)           => training         = v
+      // case LeonFlagOption("training", v)           => training         = v
       case _ =>
     }
 
-    (lucky, check, codegen, evalground, unrollUnsatCores, lemmas, training)
+    (lucky, check, codegen, evalground, unrollUnsatCores, lemmas/*, training*/)
   }
 
-  private var isTrained : Boolean   = false
+  // private var isTrained : Boolean   = false
   private var evaluator : Evaluator = null
   protected[z3] def getEvaluator : Evaluator = evaluator
 
@@ -403,7 +402,7 @@ class FairZ3Solver(context : LeonContext)
     private val checkModels  = enclosing.checkModels
     private val useCodeGen   = enclosing.useCodeGen
     private val useLemmas    = enclosing.useLemmas
-    private val doTraining   = enclosing.doTraining
+    // private val doTraining   = enclosing.doTraining
 
     initZ3
 
@@ -413,11 +412,16 @@ class FairZ3Solver(context : LeonContext)
       prepareLemmas(solver)
     }
     
+    /*
+     * We don't need these lines anymore (hope so)
+     *
+     
     if (doTraining && !isTrained) {
       reporter.info("Training Leon system by using knowledge from the user (@depend annotation)")      
       train(unfold) // call our train function, a wrapper I mean so!
       isTrained = true
     }
+    */
 
     private var varsInVC = Set[Identifier]()
 
