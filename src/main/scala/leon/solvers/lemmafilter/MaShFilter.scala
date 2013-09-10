@@ -170,8 +170,15 @@ class MaShFilter (context : LeonContext, prog: Program) extends Filter {
     // We need some useful function from Z3 :|, How can I do this thing without Z3 :| 
     // Create new Z3 solver for my purpose, yeah !
     //
-    Seq()
+    val features = getFeatureSet(fairZ3.unfold(conj, 1))
 
+    
+    val parents = m.keySet.toList.sortWith( (fd1,fd2) => fd2 < fd1).head.id.name.toString
+
+    
+    val suggestions = MaSh.query("We_need_a_name", parents, features)
+    val names = suggestions.map(  a => a match { case (b,c) => b} )
+    m.keySet.filter(f => names.contains(f.id.name.toString)).toSeq
   }
 
 }
