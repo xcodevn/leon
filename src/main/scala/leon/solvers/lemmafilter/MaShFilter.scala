@@ -22,7 +22,7 @@ class MaShFilter (context : LeonContext, prog: Program) extends Filter {
   val fairZ3 = {val sol = new FairZ3Solver(context); sol.setProgram(prog); sol.getNewSolver; sol}
 
   // create new reporter cause we don't use LeonContext
-  val reporter = new DefaultReporter()
+  // val reporter = new DefaultReporter() ; don't need it anymore ;)
 
   /*
    * Doing generate the verification condition of a function
@@ -32,7 +32,7 @@ class MaShFilter (context : LeonContext, prog: Program) extends Filter {
    * Hmmm, I don't think this function returns a VC, I want it return the body of function (property), So I can unfold it and then extract features
    */
   def genVC(funDef: FunDef): Expr = {
-    reporter.warning("FIXME: We need a real VC, not just function's body")
+    context.reporter.warning("FIXME: We need a real VC, not just function's body")
     def getImple() = funDef.implementation match {
       case Some(r) => r
       case _ => Error("Error")
@@ -135,14 +135,14 @@ class MaShFilter (context : LeonContext, prog: Program) extends Filter {
         // but now, I even also don't know how to use it in the right way
         // val parents = "FIXME:_Don't_understand_how_to_use_this" 
         val features = getFeatureSet(fairZ3.unfold(genVC(funDef), 1))
-        reporter.info("Congrats. Below is our set of features of " + funName + "() :\n["+features.mkString(",\n") + "]\n")
+        context.reporter.info("Congrats. Below is our set of features of " + funName + "() :\n["+features.mkString(",\n") + "]\n")
 
         val deps = funDef.dependencies match {
           case Some(dep) =>
             val SetLemmaName = fairZ3.program.definedFunctions.filter(f => LemmaTools.isTrueLemma(f)).map(_.id.name.toString()).toSet
             for (d <- dep) {
               if (!SetLemmaName.contains(d))
-                reporter.error("%s is NOT a real lemma".format(d))
+                context.reporter.error("%s is NOT a real lemma".format(d))
             }
             dep.filter(d => SetLemmaName.contains(d))
           case None => Set[String]()

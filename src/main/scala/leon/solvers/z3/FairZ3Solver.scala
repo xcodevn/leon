@@ -52,7 +52,7 @@ class FairZ3Solver(context : LeonContext)
       case LeonFlagOption("evalground", v)         => evalground       = v
       case LeonFlagOption("fairz3:unrollcores", v) => unrollUnsatCores = v
       case LeonFlagOption("lemmas", v)             => lemmas           = v
-      case LeonFlagOption("filter", v)             => { filter = v; lemmas = v }
+      case LeonFlagOption("filter", v)             => { filter = v; if (v==true) lemmas = v }
         
       case _ =>
     }
@@ -429,7 +429,7 @@ class FairZ3Solver(context : LeonContext)
 
           case _       => /* nothing ;) */
         }
-      } else prepareLemmas(solver, program.definedFunctions) /* As before I come here ;) */
+      } else prepareLemmas(solver, program.definedFunctions.filter(f=> f.annotations.contains("lemma"))) /* As before I come here ;) */
     }
 
     /*

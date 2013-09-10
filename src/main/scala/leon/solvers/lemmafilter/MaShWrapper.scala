@@ -23,7 +23,7 @@ object MaSh {
     } catch {
       case _: Throwable =>
         reporter.error("Can NOT read " + name + " env variables")
-        reporter.info("Disabled mash module")
+        // reporter.info("Disabled mash module")
         isOk = false // after setting this varible mash will be disable
         ""
     }
@@ -39,9 +39,9 @@ object MaSh {
 
   /* Remove every thing related with Mash from file system */
   def unlearn = {
-    reporter.info("MaSh unlearn")
+    // reporter.info("MaSh unlearn")
     if (isOk) {
-      reporter.info("Removing file in MASH_HOME directory")
+      // reporter.info("Removing file in MASH_HOME directory")
       for (file <- new File(MaShHome).listFiles) { file.delete }
     } else {}
   }
