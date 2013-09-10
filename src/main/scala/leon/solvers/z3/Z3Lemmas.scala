@@ -43,15 +43,15 @@ trait Z3Lemmas {
 
   private lazy val lemmaPost = FreshIdentifier("res").setType(BooleanType)
 
-  def prepareLemmas(solver: Z3Solver): Unit = {
-    for (funDef <- program.definedFunctions) {
+  def prepareLemmas(solver: Z3Solver, funDefs: Seq[FunDef]): Unit = {
+    for (funDef <- funDefs) {
       if (LemmaTools.isTrueLemma(funDef)) {
         val fname = funDef.id.name
         funDef.implementation match {
           case None =>
           case Some(imple) =>
           // So this looks like a good lemma :D
-          // reporter.info("Yeepee! [%s] is a nice lemma!".format(fname))
+          reporter.info("Yeepee! [%s] is a nice lemma!".format(fname))
 
           val lemmaBody: Expr = funDef.precondition.map { pre =>
             Implies(pre, imple)

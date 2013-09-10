@@ -121,9 +121,9 @@ class MaShFilter (context : LeonContext, prog: Program) extends Filter {
     // reporter.warning("FIXME: Remember to unlearn before running any testcase !")
     // reporter.warning("FIXME: I don't check if lemma dependencies are correct or not")
 
-    MaSh.learn("First_Lemma", "", Set(("F1", 2.0), ("F2", 10.0)), Set[String]())
-    MaSh.learn("Second_Lemma", "First_Lemma", Set(("F1", 2.0)), Set[String]("First_Lemma"))
-    reporter.info("Result: " + MaSh.query("Third_Lemma", "Second_Lemma", Set (("F1", 10.0), ("F2", 10.0))))
+    // MaSh.learn("First_Lemma", "", Set(("F1", 2.0), ("F2", 10.0)), Set[String]())
+    // MaSh.learn("Second_Lemma", "First_Lemma", Set(("F1", 2.0)), Set[String]("First_Lemma"))
+    // reporter.info("Result: " + MaSh.query("Third_Lemma", "Second_Lemma", Set (("F1", 10.0), ("F2", 10.0))))
 
     val funs = fairZ3.program.definedFunctions.filter(fun => fun.annotations.contains("depend") || fun.annotations.contains("lemma")).toList.sortWith((fd1, fd2) => fd1 < fd2)
 
@@ -171,12 +171,10 @@ class MaShFilter (context : LeonContext, prog: Program) extends Filter {
     // Create new Z3 solver for my purpose, yeah !
     //
     val features = getFeatureSet(fairZ3.unfold(conj, 1))
-
     
     val parents = m.keySet.toList.sortWith( (fd1,fd2) => fd2 < fd1).head.id.name.toString
-
     
-    val suggestions = MaSh.query("We_need_a_name", parents, features)
+    val suggestions = MaSh.query("We_need_a_name_for_it", parents, features)
     val names = suggestions.map(  a => a match { case (b,c) => b} )
     m.keySet.filter(f => names.contains(f.id.name.toString)).toSeq
   }

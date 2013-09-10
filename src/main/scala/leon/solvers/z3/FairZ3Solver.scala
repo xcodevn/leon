@@ -21,7 +21,7 @@ import termination._
 import scala.collection.mutable.{Map => MutableMap}
 import scala.collection.mutable.{Set => MutableSet}
 
-import leon.solvers.lemmafilter.Z3Training
+import leon.solvers.lemmafilter._
 
 class FairZ3Solver(context : LeonContext)
   extends Solver(context)
@@ -36,14 +36,14 @@ class FairZ3Solver(context : LeonContext)
   def debug(s: String) = context.reporter.debug(ReportingSolver)(s)
 
   // What wouldn't we do to avoid defining vars?
-  val (feelingLucky, checkModels, useCodeGen, evalGroundApps, unrollUnsatCores, useLemmas/*, doTraining*/) = locally {
+  val (feelingLucky, checkModels, useCodeGen, evalGroundApps, unrollUnsatCores, useLemmas, useFilter) = locally {
     var lucky            = false
     var check            = false
     var codegen          = false
     var evalground       = false
     var unrollUnsatCores = false
     var lemmas           = false
-    // var training         = false
+    var filter           = false
 
     for(opt <- context.options) opt match {
       case LeonFlagOption("checkmodels", v)        => check            = v
@@ -52,14 +52,15 @@ class FairZ3Solver(context : LeonContext)
       case LeonFlagOption("evalground", v)         => evalground       = v
       case LeonFlagOption("fairz3:unrollcores", v) => unrollUnsatCores = v
       case LeonFlagOption("lemmas", v)             => lemmas           = v
-      // case LeonFlagOption("training", v)           => training         = v
+      case LeonFlagOption("filter", v)             => { filter = v; lemmas = v }
+        
       case _ =>
     }
 
-    (lucky, check, codegen, evalground, unrollUnsatCores, lemmas/*, training*/)
+    (lucky, check, codegen, evalground, unrollUnsatCores, lemmas, filter)
   }
 
-  // private var isTrained : Boolean   = false
+  private var curExpr : Option[Expr]   = None
   private var evaluator : Evaluator = null
   protected[z3] def getEvaluator : Evaluator = evaluator
 
@@ -126,6 +127,9 @@ class FairZ3Solver(context : LeonContext)
 
   override def solveSAT(vc : Expr) : (Option[Boolean],Map[Identifier,Expr]) = {
     val solver = getNewSolver
+
+    curExpr = Option(vc)
+
     solver.assertCnstr(vc)
     (solver.check, solver.getModel)
   }
@@ -409,9 +413,25 @@ class FairZ3Solver(context : LeonContext)
     val solver = z3.mkSolver
 
     if(useLemmas) {
-      prepareLemmas(solver)
+      if (useFilter) {
+        curExpr match { 
+          case Some(expr) => 
+            val MaShfilter = new MaShFilter(context, program)
+            val funs = program.definedFunctions.filter(f=>f.isReach).sortWith( (fd1,fd2) => fd1 < fd2 ).reverse
+            val curFun = funs.head
+            if (curFun.annotations.contains("depend")) {
+              curFun.dependencies match { case Some(deps) => prepareLemmas(solver, funs.filter(f => deps.contains(f.id.name.toString))); case _ => }
+            } else {
+              val m = funs.tail.filter(f => f.annotations.contains("lemma")).map( f => (f, Error(":-)"))).toMap
+              if (m.size > 0)
+                prepareLemmas(solver, MaShfilter.filter(expr, m))
+            }
+
+          case _       => /* nothing ;) */
+        }
+      } else prepareLemmas(solver, program.definedFunctions) /* As before I come here ;) */
     }
-    
+
     /*
      * We don't need these lines anymore (hope so)
      *

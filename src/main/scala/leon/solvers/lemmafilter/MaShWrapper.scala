@@ -107,7 +107,7 @@ object MaSh {
         out.close
 
         val run = "%s -q --saveModel --statistics --nb --modelFile %s --dictsFile %s --log %s --numberOfPredictions %d --inputFile %s  --predictions %s".format(
-          command, MaShHome + "/mash_model.pickle", MaShHome + "/mash_dict.pickle", MaShHome + "/mash_log.txt", 5, f.getAbsolutePath, MaShHome + "/mash_sugg.txt")
+          command, MaShHome + "/mash_model.pickle", MaShHome + "/mash_dict.pickle", MaShHome + "/mash_log.txt", 2, f.getAbsolutePath, MaShHome + "/mash_sugg.txt")
 
         run.!! // reporter.info("Output: " + run.!!)
         f.deleteOnExit()

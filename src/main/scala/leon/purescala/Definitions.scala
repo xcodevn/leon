@@ -286,6 +286,8 @@ object Definitions {
     var postcondition: Option[(Identifier, Expr)] = None
     var dependencies: Option[Set[String]] = None
 
+    var isReach = false
+
     // Metadata kept here after transformations
     var parent: Option[FunDef] = None
     var orig: Option[FunDef] = None

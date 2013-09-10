@@ -23,7 +23,7 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
   override val definedOptions : Set[LeonOptionDef] = Set(
     LeonValueOptionDef("functions", "--functions=f1:f2", "Limit verification to f1,f2,..."),
     LeonValueOptionDef("timeout",   "--timeout=T",       "Timeout after T seconds when trying to prove a verification condition."),
-    LeonFlagOptionDef("training",           "--training",           "Train leon by using @depend()")
+    LeonFlagOptionDef("training",   "--training",        "Train leon by using @depend")
   )
 
   def generateVerificationConditions(reporter: Reporter, program: Program, functionsToAnalyse: Set[String]): Map[FunDef, List[VerificationCondition]] = {
@@ -66,6 +66,7 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
 
     for((funDef, vcs) <- vcs.toSeq.sortWith((a,b) => a._1 < b._1); vcInfo <- vcs if !vctx.shouldStop.get()) {
       val funDef = vcInfo.funDef
+      funDef.isReach = true
       val vc = vcInfo.condition
 
       reporter.info("Now considering '" + vcInfo.kind + "' VC for " + funDef.id + "...")

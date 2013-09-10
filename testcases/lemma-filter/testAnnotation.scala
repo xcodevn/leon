@@ -24,17 +24,25 @@ object ReverseList {
   @induct
   def app_nil(l: List): Boolean = { app(l, Nil()) == l } holds
 
-  def plus2(x: Int) = { x + 2 } 
+  def plus2(l: List, x: Int) = { 
+    l match {
+      case Nil() => true
+      case Cons(xx, xs) => x + 2 == xx - 10 
+    }
+  } holds
   
-  @depend("app_nil","plus2", "app(Nil(),Nil())")
+  @depend("app_nil")
   def run_rec_app_nil(l: List): Boolean = {
     l match {
       case Nil() => app_nil(l)
-      case Cons(h, t) => run_rec_app_nil(t)  && app_nil(l)  && Cons(12, l) == Cons(plus2(10), l)
+      case Cons(h, t) => run_rec_app_nil(t)  && app_nil(l)
     } 
   } holds
 
-  @lemma
-  def equal4(n: Int): Boolean = { n == 4 + (n-3) + 1 && plus2(5) == 7} holds
-  
+  def dup_rec_app_nil(l: List): Boolean = {
+    l match {
+      case Nil() => app_nil(l)
+      case Cons(h, t) => run_rec_app_nil(t)  && app_nil(l)
+    } 
+  } holds
 }
