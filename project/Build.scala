@@ -14,6 +14,8 @@ object Leon extends Build {
   def is64 = System.getProperty("sun.arch.data.model") == "64"
   def ldLibraryDir32 = file(".") / "lib-bin" / "32"
   def ldLibraryDir64 = file(".") / "lib-bin" / "64"
+  def ldMaShHome      = file(".") / "unmanaged" / "common" / "MaSh"
+  def ldMaShDir      = file(".") / "unmanaged" / "common" / "MaSh" / ".mash"
 
   val cleanTask = TaskKey[Unit]("clean", "Cleans up the generated binaries and scripts.") <<= (streams, clean) map { (s,c) =>
     c
@@ -68,6 +70,8 @@ object Leon extends Build {
     sfw.write("export LD_LIBRARY_PATH=\""+ldLibPath+"\"" + nl)
     sfw.write("export LEON_LIBRARY_PATH=\""+leonLibPath+"\"" + nl)
     sfw.write("export SCALA_HOME=\""+scalaHomeDir+"\"" + nl)
+    sfw.write("export MASH_HOME=\""+ldMaShHome.absolutePath+"\"" + nl)
+    sfw.write("export MASH_DIR=\""+ldMaShDir.absolutePath+"\"" + nl)
     sfw.close
     setupScriptFile.setExecutable(true)
 
