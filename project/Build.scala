@@ -14,8 +14,8 @@ object Leon extends Build {
   def is64 = System.getProperty("sun.arch.data.model") == "64"
   def ldLibraryDir32 = file(".") / "lib-bin" / "32"
   def ldLibraryDir64 = file(".") / "lib-bin" / "64"
-  def ldMaShHome      = file(".") / "unmanaged" / "common" / "MaSh"
-  def ldMaShDir      = file(".") / "unmanaged" / "common" / "MaSh" / ".mash"
+  def ldMaShDir      = file(".") / "unmanaged" / "common" / "MaSh"
+  def ldMaShHome      = file(".") / "unmanaged" / "common" / "MaSh" / ".mash"
 
   val cleanTask = TaskKey[Unit]("clean", "Cleans up the generated binaries and scripts.") <<= (streams, clean) map { (s,c) =>
     c
