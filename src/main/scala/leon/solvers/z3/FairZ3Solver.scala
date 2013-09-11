@@ -84,9 +84,7 @@ class FairZ3Solver(context : LeonContext)
   // This is fixed.
   protected[leon] val z3cfg = new Z3Config(
     "MODEL" -> true,
-    "MBQI" -> true,                // turn off this one when done with pattern problem
-    // "SOFT_TIMEOUT" -> 500,        // Leon stuck in some cases
-    "SMTLIB2_COMPLIANT" -> true,   // output as SMT2 format
+    "MBQI" -> false,                
     "TYPE_CHECK" -> true,
     "WELL_SORTED_CHECK" -> true
   )
