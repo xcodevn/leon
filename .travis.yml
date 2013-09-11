@@ -15,4 +15,4 @@ jdk:
 notifications:
     email:
         - xcodevn@gmail.com
-    irc: "chat.freenode.net#epfl-lara"
+    irc: "chat.freenode.net#xcode-leon"
