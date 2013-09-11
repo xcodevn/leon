@@ -25,15 +25,11 @@ class SynthesisSuite extends LeonTestSuite {
 
   def forProgram(title: String)(content: String)(block: (SynthesisContext, FunDef, Problem) => Unit) {
 
-    val ctx = LeonContext(
-      settings = Settings(
+    val ctx = testContext.copy(settings = Settings(
         synthesis = true,
         xlang     = false,
         verify    = false
-      ),
-      files = List(),
-      reporter = new TestSilentReporter
-    )
+      ))
 
     val opts = SynthesisOptions()
 
@@ -41,22 +37,13 @@ class SynthesisSuite extends LeonTestSuite {
 
     val (program, results) = pipeline.run(ctx)((content, Nil))
 
-    val solver = new FairZ3Solver(ctx)
-    solver.setProgram(program)
-
-    val simpleSolver = new UninterpretedZ3Solver(ctx)
-    simpleSolver.setProgram(program)
-
     for ((f, ps) <- results; p <- ps) {
       test("Synthesizing %3d: %-20s [%s]".format(nextInt(), f.id.toString, title)) {
         val sctx = SynthesisContext(ctx,
                                     opts,
                                     Some(f),
                                     program,
-                                    solver,
-                                    simpleSolver,
-                                    new DefaultReporter,
-                                    new java.util.concurrent.atomic.AtomicBoolean)
+                                    ctx.reporter)
 
         block(sctx, f, p)
       }

@@ -3,20 +3,18 @@
 package leon.test
 package solvers.z3
 
-import leon.LeonContext
-
 import leon.purescala.Common._
 import leon.purescala.Definitions._
 import leon.purescala.Trees._
 import leon.purescala.TreeOps._
 import leon.purescala.TypeTrees._
 
-import leon.solvers.Solver
-import leon.solvers.z3.FairZ3Solver
+import leon.solvers._
+import leon.solvers.z3._
 
 class FairZ3SolverTestsNewAPI extends LeonTestSuite {
   private var testCounter : Int = 0
-  private def solverCheck(solver : Solver, expr : Expr, expected : Option[Boolean], msg : String) = {
+  private def solverCheck(solver : SolverFactory[Solver], expr : Expr, expected : Option[Boolean], msg : String) = {
     testCounter += 1
 
     test("Solver test #" + testCounter) {
@@ -28,22 +26,20 @@ class FairZ3SolverTestsNewAPI extends LeonTestSuite {
     }
   }
 
-  private def assertValid(solver : Solver, expr : Expr) = solverCheck(
+  private def assertValid(solver : SolverFactory[Solver], expr : Expr) = solverCheck(
     solver, expr, Some(true),
     "Solver should prove the formula " + expr + " valid."
   )
 
-  private def assertInvalid(solver : Solver, expr : Expr) = solverCheck(
+  private def assertInvalid(solver : SolverFactory[Solver], expr : Expr) = solverCheck(
     solver, expr, Some(false),
     "Solver should prove the formula " + expr + " invalid."
   )
 
-  private def assertUnknown(solver : Solver, expr : Expr) = solverCheck(
+  private def assertUnknown(solver : SolverFactory[Solver], expr : Expr) = solverCheck(
     solver, expr, None,
     "Solver should not be able to decide the formula " + expr + "."
   )
-
-  private val silentContext = LeonContext(reporter = new TestSilentReporter)
 
   // def f(fx : Int) : Int = fx + 1
   private val fx   : Identifier = FreshIdentifier("x").setType(Int32Type)
@@ -61,9 +57,7 @@ class FairZ3SolverTestsNewAPI extends LeonTestSuite {
   private val y : Expr = Variable(FreshIdentifier("y").setType(Int32Type))
   private def f(e : Expr) : Expr = FunctionInvocation(fDef, e :: Nil)
 
-  private val solver = new FairZ3Solver(silentContext)
-  solver.setProgram(minimalProgram)
-  solver.restartZ3
+  private val solver = new FairZ3SolverFactory(testContext, minimalProgram)
 
   private val tautology1 : Expr = BooleanLiteral(true)
   assertValid(solver, tautology1)
@@ -119,4 +113,6 @@ class FairZ3SolverTestsNewAPI extends LeonTestSuite {
       assert(sub.getUnsatCore === Set(b2))
     }
   }
+
+  solver.free()
 }

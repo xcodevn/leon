@@ -16,3 +16,5 @@ derivation*.dot
 unmanaged/64/scalaz3_2.10-2.0.jar
 *.pyc
 src/main/scala/leon/codegen/runtime
+# leon
+last.log

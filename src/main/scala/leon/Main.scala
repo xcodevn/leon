@@ -2,6 +2,8 @@
 
 package leon
 
+import leon.utils._
+
 object Main {
 
   lazy val allPhases: List[LeonPhase[_, _]] = {
@@ -58,7 +60,7 @@ object Main {
   def processOptions(args: Seq[String]): LeonContext = {
     val phases = allPhases
 
-    val initReporter = new DefaultReporter()
+    val initReporter = new DefaultReporter(Settings())
 
     val allOptions = this.allOptions
 
@@ -108,8 +110,7 @@ object Main {
           optionsValues +=  allOptionsMap(name) -> v
         }
       } else {
-        initReporter.error("'"+name+"' is not a valid option. See 'leon --help'")
-        None
+        initReporter.fatalError("'"+name+"' is not a valid option. See 'leon --help'")
       }
     }
 
@@ -141,12 +142,16 @@ object Main {
         settings = settings.copy(xlang = value)
       case LeonValueOption("debug", ListValue(sections)) =>
         val debugSections = sections.flatMap { s =>
-          ReportingSections.all.find(_.name == s) match {
-            case Some(rs) =>
-              Some(rs)
-            case None =>
-              initReporter.error("Section "+s+" not found, available: "+ReportingSections.all.map(_.name).mkString(", "))
-              None
+          if (s == "all") {
+            ReportingSections.all
+          } else {
+            ReportingSections.all.find(_.name == s) match {
+              case Some(rs) =>
+                Some(rs)
+              case None =>
+                initReporter.error("Section "+s+" not found, available: "+ReportingSections.all.map(_.name).mkString(", "))
+                None
+            }
           }
         }
         settings = settings.copy(debugSections = debugSections.toSet)
@@ -155,11 +160,10 @@ object Main {
       case _ =>
     }
 
-    // Create a new reporter taking debugSections into account
-    val reporter = new DefaultReporter(settings.debugSections)
+    // Create a new reporter taking settings into account
+    val reporter = new DefaultReporter(settings)
 
-    reporter.ifDebug(ReportingOptions) {
-      val debug = reporter.debug(ReportingOptions)_
+    reporter.whenDebug(ReportingOptions) { debug =>
 
       debug("Options considered by Leon:")
       for (lo <- leonOptions) lo match {
@@ -171,7 +175,15 @@ object Main {
       }
     }
 
-    LeonContext(settings = settings, reporter = reporter, files = files, options = leonOptions)
+    val intManager = new InterruptManager(reporter)
+
+    intManager.registerSignalHandler()
+
+    LeonContext(settings = settings,
+                reporter = reporter,
+                files = files,
+                options = leonOptions,
+                interruptManager = intManager)
   }
 
   def computePipeline(settings: Settings): Pipeline[List[String], Any] = {
@@ -197,25 +209,42 @@ object Main {
   }
 
   def main(args : Array[String]) {
-    val reporter = new DefaultReporter()
-
-    // Process options
-    val ctx = processOptions(args.toList)
-
-    // Compute leon pipeline
-    val pipeline = computePipeline(ctx.settings)
-
     try {
+      // Process options
+      val timer     = new Stopwatch().start
+
+      val ctx = processOptions(args.toList)
+
+      ctx.timers.get("Leon Opts") += timer
+
+      // Compute leon pipeline
+      val pipeline = computePipeline(ctx.settings)
+
+      timer.restart
+
       // Run pipeline
       pipeline.run(ctx)(args.toList) match {
         case report: verification.VerificationReport =>
-          reporter.info(report.summaryString)
+          ctx.reporter.info(report.summaryString)
 
         case report: termination.TerminationReport =>
-          reporter.info(report.summaryString)
+          ctx.reporter.info(report.summaryString)
 
         case _ =>
       }
+
+      ctx.timers.get("Leon Run") += timer
+
+      ctx.reporter.whenDebug(ReportingTimers) { debug =>
+        debug("-"*80)
+        debug("Times:")
+        debug("-"*80)
+        for ((name, swc) <- ctx.timers.getAll.toSeq.sortBy(_._1)) {
+          debug(swc.toString)
+        }
+        debug("-"*80)
+      }
+
     } catch {
       case LeonFatalError() => sys.exit(1)
     }

@@ -1,4 +1,8 @@
-package leon.test
+package leon
+package test
+
+import leon.utils._
+
 import scala.io.Source
 import org.scalatest._
 import org.scalatest.concurrent._
@@ -14,10 +18,7 @@ trait LeonTestSuite extends FunSuite with Timeouts {
   case class Statistics(values: List[Long]) {
     val n      = values.size
     val avg    = values.sum.toDouble/n
-
-    def pow2(x:Double) = x*x
-
-    val stddev = Math.sqrt(values.map(x => pow2(x.toDouble - avg)).sum/n)
+    val stddev = Math.sqrt(values.map(v => Math.pow(v.toDouble - avg, 2)).sum/n)
 
     def accountsFor(ms: Long) = {
       if (n < 5) {
@@ -31,8 +32,24 @@ trait LeonTestSuite extends FunSuite with Timeouts {
     def withValue(v: Long) = this.copy(v :: values)
   }
 
+
+  var testContext = generateContext
+
+  def generateContext = {
+    val reporter = new TestSilentReporter
+
+    LeonContext(
+      settings = Settings(),
+      files = List(),
+      reporter = reporter,
+      interruptManager = new InterruptManager(reporter)
+    )
+  }
+
   def testIdentifier(name: String): String = {
-    (this.getClass.getName+"-"+name).replaceAll("[^0-9a-zA-Z-]", "")
+    def sanitize(s: String) = s.replaceAll("[^0-9a-zA-Z-]", "")
+
+    sanitize(this.getClass.getName)+"/"+sanitize(name)
   }
 
   def bookKeepingFile(id: String) = {
@@ -72,12 +89,20 @@ trait LeonTestSuite extends FunSuite with Timeouts {
     fw.close
   }
 
+  override implicit val defaultInterruptor = new Interruptor {
+    def apply(t: Thread) {
+      testContext.interruptManager.interrupt()
+    }
+  }
+
   override def test(name: String, tags: Tag*)(body: => Unit) {
     super.test(name, tags: _*) {
       val id = testIdentifier(name)
       val ts = now()
 
-      failAfter(2.minutes) {
+      testContext = generateContext
+
+      failAfter(5.minutes) {
         body
       }
 

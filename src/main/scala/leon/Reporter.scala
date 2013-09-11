@@ -5,13 +5,14 @@ package leon
 import purescala.Definitions.Definition
 import purescala.Trees.Expr
 import purescala.PrettyPrinter
+import scala.annotation.implicitNotFound
 
-abstract class Reporter(enabledSections: Set[ReportingSection]) {
+abstract class Reporter(settings: Settings) {
   def infoFunction(msg: Any) : Unit
   def warningFunction(msg: Any) : Unit
   def errorFunction(msg: Any) : Unit
-  def fatalErrorFunction(msg: Any) : Nothing
   def debugFunction(msg: Any) : Unit
+  def fatalErrorFunction(msg: Any) : Nothing
 
   // This part of the implementation is non-negociable.
   private var _errorCount : Int = 0
@@ -34,21 +35,28 @@ abstract class Reporter(enabledSections: Set[ReportingSection]) {
     fatalErrorFunction(msg)
   }
 
-  val debugMask = enabledSections.foldLeft(0){ _ | _.mask }
+  private val debugMask = settings.debugSections.foldLeft(0){ _ | _.mask }
 
-  final def debug(section: ReportingSection)(msg: => Any) = {
-    ifDebug(section) { debugFunction(msg) }
+  def ifDebug(body: (Any => Unit) => Any)(implicit section: ReportingSection) = {
+    if ((debugMask & section.mask) == section.mask) {
+      body(debugFunction)
+    }
   }
 
-  final def ifDebug(section: ReportingSection)(body: => Unit) = {
+  def whenDebug(section: ReportingSection)(body: (Any => Unit) => Any) {
     if ((debugMask & section.mask) == section.mask) {
-      body
+      body(debugFunction)
     }
+  }
+
+  def debug(msg: => Any)(implicit section: ReportingSection) = {
+    ifDebug{ debug =>
+      debug(msg)
+    }(section)
   }
 }
 
-
-class DefaultReporter(enabledSections: Set[ReportingSection] = Set()) extends Reporter(enabledSections) {
+class DefaultReporter(settings: Settings) extends Reporter(settings) {
   protected val errorPfx   = "[ Error ] "
   protected val warningPfx = "[Warning] "
   protected val infoPfx    = "[ Info  ] "
@@ -71,25 +79,31 @@ class DefaultReporter(enabledSections: Set[ReportingSection] = Set()) extends Re
     msg.replaceAll("\n", "\n" + (" " * (pfx.size)))
   }
 
-  def errorFunction(msg: Any) = output(reline(errorPfx, msg.toString))
+  def errorFunction(msg: Any)   = output(reline(errorPfx, msg.toString))
   def warningFunction(msg: Any) = output(reline(warningPfx, msg.toString))
-  def infoFunction(msg: Any) = output(reline(infoPfx, msg.toString))
-  def fatalErrorFunction(msg: Any) = { output(reline(fatalPfx, msg.toString)); throw LeonFatalError() }
-  def debugFunction(msg: Any) = output(reline(debugPfx, msg.toString))
+  def infoFunction(msg: Any)    = output(reline(infoPfx, msg.toString))
+  def debugFunction(msg: Any)   = output(reline(debugPfx, msg.toString))
+  def fatalErrorFunction(msg: Any) = {
+    output(reline(fatalPfx, msg.toString));
+    throw LeonFatalError()
+  }
 }
 
+@implicitNotFound("No implicit debug section found in scope. You need define an implicit ReportingSection to use debug/ifDebug")
 sealed abstract class ReportingSection(val name: String, val mask: Int)
 
-case object ReportingSolver    extends ReportingSection("solver",    1 << 0)
-case object ReportingSynthesis extends ReportingSection("synthesis", 1 << 1)
-case object ReportingTimers    extends ReportingSection("timers",    1 << 2)
-case object ReportingOptions   extends ReportingSection("options",   1 << 3)
+case object ReportingSolver       extends ReportingSection("solver",       1 << 0)
+case object ReportingSynthesis    extends ReportingSection("synthesis",    1 << 1)
+case object ReportingTimers       extends ReportingSection("timers",       1 << 2)
+case object ReportingOptions      extends ReportingSection("options",      1 << 3)
+case object ReportingVerification extends ReportingSection("verification", 1 << 4)
 
 object ReportingSections {
   val all = Set[ReportingSection](
     ReportingSolver,
     ReportingSynthesis,
     ReportingTimers,
-    ReportingOptions
+    ReportingOptions,
+    ReportingVerification
   )
 }

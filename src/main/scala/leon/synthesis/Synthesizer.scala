@@ -8,18 +8,13 @@ import purescala.Definitions.{Program, FunDef}
 import purescala.TreeOps._
 import purescala.Trees._
 import purescala.ScalaPrinter
-import solvers.z3._
-import solvers.TimeoutSolver
-import sun.misc.{Signal, SignalHandler}
 
-import solvers.Solver
+import solvers._
+import solvers.z3._
+
 import java.io.File
 
-import collection.mutable.PriorityQueue
-
 import synthesis.search._
-
-import java.util.concurrent.atomic.AtomicBoolean
 
 class Synthesizer(val context : LeonContext,
                   val functionContext: Option[FunDef],
@@ -29,15 +24,7 @@ class Synthesizer(val context : LeonContext,
 
   val rules: Seq[Rule] = options.rules
 
-  val solver: FairZ3Solver = new FairZ3Solver(context)
-  solver.setProgram(program)
-
-  val simpleSolver: Solver = new UninterpretedZ3Solver(context)
-  simpleSolver.setProgram(program)
-
   val reporter = context.reporter
-
-  var shouldStop = new AtomicBoolean(false)
 
   def synthesize(): (Solution, Boolean) = {
 
@@ -55,23 +42,16 @@ class Synthesizer(val context : LeonContext,
         }
       }
 
-    val sigINT = new Signal("INT")
-    var oldHandler: SignalHandler = null
-    oldHandler = Signal.handle(sigINT, new SignalHandler {
-      def handle(sig: Signal) {
-        println
-        reporter.info("Aborting...")
-
-        shouldStop.set(true)
-        search.stop()
-
-        Signal.handle(sigINT, oldHandler)
-      }
-    })
-
     val ts = System.currentTimeMillis()
 
     val res = search.search()
+
+    search match {
+      case pr: ParallelSearch =>
+        context.timers.add(pr.expandTimers)
+        context.timers.add(pr.sendWorkTimers)
+      case _ =>
+    }
 
     val diff = System.currentTimeMillis()-ts
     reporter.info("Finished in "+diff+"ms")
@@ -100,8 +80,7 @@ class Synthesizer(val context : LeonContext,
 
     val (npr, fds) = solutionToProgram(sol)
 
-    val tsolver = new TimeoutSolver(new FairZ3Solver(context), timeoutMs)
-    tsolver.setProgram(npr)
+    val tsolver = new TimeoutSolverFactory(new FairZ3SolverFactory(context, npr), timeoutMs)
 
     val vcs = generateVerificationConditions(reporter, npr, fds.map(_.id.name))
     val vctx = VerificationContext(context, Seq(tsolver), context.reporter)

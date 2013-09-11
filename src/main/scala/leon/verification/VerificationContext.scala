@@ -3,13 +3,12 @@
 package leon
 package verification
 
-import solvers.Solver
+import solvers._
 
 import java.util.concurrent.atomic.AtomicBoolean
 
 case class VerificationContext (
   context: LeonContext,
-  solvers: Seq[Solver],
-  reporter: Reporter,
-  shouldStop: AtomicBoolean = new AtomicBoolean(false)
+  solvers: Seq[SolverFactory[Solver]],
+  reporter: Reporter
 )
