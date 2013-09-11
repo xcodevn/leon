@@ -21,10 +21,6 @@ class MaShFilter (context : LeonContext, prog: Program) extends Filter {
    */
   val fairZ3 = {val sol = new FairZ3SolverFactory(context, prog); sol.getNewSolver; sol}
 
-  override def finalize() {
-    fairZ3.free()
-  }
-
   // create new reporter cause we don't use LeonContext
   // val reporter = new DefaultReporter() ; don't need it anymore ;)
 

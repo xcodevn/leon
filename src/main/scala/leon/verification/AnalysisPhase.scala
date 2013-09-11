@@ -155,6 +155,7 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
       reporter.info("Training MaSh Filter from user guide...")
       val MaShFilter = new MaShFilter(ctx, program)
       MaShFilter.train
+      MaShFilter.fairZ3.free()
     }
 
     val baseSolvers : Seq[SolverFactory[Solver]] = fairZ3 :: Nil

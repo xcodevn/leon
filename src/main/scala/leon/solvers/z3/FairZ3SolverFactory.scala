@@ -453,6 +453,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
             }
             */
 
+           MaShfilter.fairZ3.free()
         } else prepareLemmas(solver, program.definedFunctions.filter(f=> f.annotations.contains("lemma"))) /* As before I come here ;) */
       }
 
