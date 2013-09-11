@@ -86,7 +86,7 @@ object RedBlackTree {
   def buggyAdd(x: Int, t: Tree): Tree = {
     require(redNodesHaveBlackChildren(t))
     ins(x, t)
-  } ensuring (res => content(res) == content(t) ++ Set(x) && redNodesHaveBlackChildren(res))
+  } // ensuring (res => content(res) == content(t) ++ Set(x) && redNodesHaveBlackChildren(res))
   
   def buggyBalance(c: Color, a: Tree, x: Int, b: Tree): Tree = {
     Node(c,a,x,b) match {
