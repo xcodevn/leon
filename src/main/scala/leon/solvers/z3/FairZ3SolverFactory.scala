@@ -451,6 +451,8 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
               val res = MePofilter.filter(expression, m)
               prepareLemmas(solver, res)
             }
+
+            MePofilter.fairZ3.free()
             */
 
            MaShfilter.fairZ3.free()

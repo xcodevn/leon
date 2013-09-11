@@ -19,7 +19,7 @@ class MaShFilter (context : LeonContext, prog: Program) extends Filter {
    * Create our own Z3 solver
    * Doing some more stuff for correctly running of the solver (that is the problem of a state machine :[ )
    */
-  val fairZ3 = {val sol = new FairZ3SolverFactory(context, prog); sol.getNewSolver; sol}
+  val fairZ3 = new FairZ3SolverFactory(context, prog); fairZ3.getNewSolver
 
   // create new reporter cause we don't use LeonContext
   // val reporter = new DefaultReporter() ; don't need it anymore ;)
