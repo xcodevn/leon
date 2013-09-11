@@ -61,7 +61,8 @@ class PureScalaVerificationRegression extends LeonTestSuite {
     for(f <- fs) {
       mkTest(f, List(LeonFlagOption("feelinglucky", true)), forError)(block)
       mkTest(f, List(LeonFlagOption("codegen", true), LeonFlagOption("evalground", true), LeonFlagOption("feelinglucky", true)), forError)(block)
-      mkTest(f, List(LeonFlagOption("training", true), LeonFlagOption("filter", true), LeonFlagOption("codegen", true), LeonFlagOption("evalground", true), LeonFlagOption("feelinglucky", true)), forError)(block)
+      mkTest(f, List(LeonFlagOption("training", true), LeonValueOption("filter", "MaSh"), LeonFlagOption("codegen", true), LeonFlagOption("evalground", true), LeonFlagOption("feelinglucky", true)), forError)(block)
+      mkTest(f, List(LeonFlagOption("training", true), LeonValueOption("filter", "MePo"), LeonFlagOption("codegen", true), LeonFlagOption("evalground", true), LeonFlagOption("feelinglucky", true)), forError)(block)
     }
   }
   

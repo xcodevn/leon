@@ -34,14 +34,14 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
 
   enclosing =>
 
-  val (feelingLucky, checkModels, useCodeGen, evalGroundApps, unrollUnsatCores, useLemmas, useFilter) = locally {
+  val (feelingLucky, checkModels, useCodeGen, evalGroundApps, unrollUnsatCores, useLemmas, filterName) = locally {
     var lucky            = false
     var check            = false
     var codegen          = false
     var evalground       = false
     var unrollUnsatCores = false
     var lemmas           = false
-    var filter           = false
+    var filter: String   = "NOTUSED"
 
     for(opt <- context.options) opt match {
       case LeonFlagOption("checkmodels", v)        => check            = v
@@ -50,7 +50,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
       case LeonFlagOption("evalground", v)         => evalground       = v
       case LeonFlagOption("fairz3:unrollcores", v) => unrollUnsatCores = v
       case LeonFlagOption("lemmas", v)             => lemmas           = v
-      case LeonFlagOption("filter", v)             => { filter = v; if (v==true) lemmas = v }
+      case LeonValueOption("filter", v)            => { filter = v; if (v=="MaSh" || v == "MePo") lemmas = true }
         
       case _ =>
     }
@@ -432,18 +432,21 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
       /* Only use filter in the first time of calling this function */
       if(useLemmas && ! addLemmaYet) {
         addLemmaYet = true
-        if (useFilter) {
-              val MaShfilter = new MaShFilter(context, program)
-              val funs = program.definedFunctions.filter(f=>f.isReach).sortWith( (fd1,fd2) => fd1 < fd2 ).reverse
-              val curFun = funs.head
-              if (curFun.annotations.contains("depend")) {
-                curFun.dependencies match { case Some(deps) => prepareLemmas(solver, funs.filter(f => deps.contains(f.id.name.toString))); case _ => }
-              } else {
-                val m = funs.tail.filter(f => f.annotations.contains("lemma")).map( f => (f, Error(":-)"))).toMap
-                if (m.size > 0)
-                  prepareLemmas(solver, MaShfilter.filter(expression, m))
-              }
-              /*
+        filterName match {
+          case "MaSh" =>
+            val MaShfilter = new MaShFilter(context, program)
+            val funs = program.definedFunctions.filter(f=>f.isReach).sortWith( (fd1,fd2) => fd1 < fd2 ).reverse
+            val curFun = funs.head
+            if (curFun.annotations.contains("depend")) {
+              curFun.dependencies match { case Some(deps) => prepareLemmas(solver, funs.filter(f => deps.contains(f.id.name.toString))); case _ => }
+            } else {
+              val m = funs.tail.filter(f => f.annotations.contains("lemma")).map( f => (f, Error(":-)"))).toMap
+              if (m.size > 0)
+                prepareLemmas(solver, MaShfilter.filter(expression, m))
+            }
+            MaShfilter.fairZ3.free() // go away z3 ;)
+
+          case "MePo" =>
             val MePofilter = new MePoFilter(context, program)
             val funs = program.definedFunctions.filter(f=>f.isReach).sortWith( (fd1,fd2) => fd1 < fd2 ).reverse
             val m = funs.tail.filter(f => f.annotations.contains("lemma")).map( f => (f, MePofilter.genVC(f))).toMap
@@ -451,12 +454,11 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
               val res = MePofilter.filter(expression, m)
               prepareLemmas(solver, res)
             }
+            MePofilter.fairZ3.free() // I don't need you anymore
 
-            MePofilter.fairZ3.free()
-            */
-
-           MaShfilter.fairZ3.free()
-        } else prepareLemmas(solver, program.definedFunctions.filter(f=> f.annotations.contains("lemma"))) /* As before I come here ;) */
+          case _ =>
+            prepareLemmas(solver, program.definedFunctions.filter(f=> f.annotations.contains("lemma"))) /* As before I come here ;) */
+        }
       }
 
       varsInVC ++= variablesOf(expression)
