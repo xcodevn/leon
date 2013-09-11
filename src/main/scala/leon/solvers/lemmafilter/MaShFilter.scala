@@ -21,6 +21,10 @@ class MaShFilter (context : LeonContext, prog: Program) extends Filter {
    */
   val fairZ3 = {val sol = new FairZ3SolverFactory(context, prog); sol.getNewSolver; sol}
 
+  override def finalize() {
+    fairZ3.free()
+  }
+
   // create new reporter cause we don't use LeonContext
   // val reporter = new DefaultReporter() ; don't need it anymore ;)
 
@@ -152,7 +156,6 @@ class MaShFilter (context : LeonContext, prog: Program) extends Filter {
         funName
     })
 
-    fairZ3.free()
   }
 
   /* 
@@ -179,7 +182,6 @@ class MaShFilter (context : LeonContext, prog: Program) extends Filter {
     val suggestions = MaSh.query("We_need_a_name_for_it", parents, features)
     val names = suggestions.map(  a => a match { case (b,c) => b} )
 
-    fairZ3.free()
     m.keySet.filter(f => names.contains(f.id.name.toString)).toSeq
   }
 
