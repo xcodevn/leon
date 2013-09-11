@@ -433,7 +433,6 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
       if(useLemmas && ! addLemmaYet) {
         addLemmaYet = true
         if (useFilter) {
-          /*
               val MaShfilter = new MaShFilter(context, program)
               val funs = program.definedFunctions.filter(f=>f.isReach).sortWith( (fd1,fd2) => fd1 < fd2 ).reverse
               val curFun = funs.head
@@ -444,7 +443,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
                 if (m.size > 0)
                   prepareLemmas(solver, MaShfilter.filter(expression, m))
               }
-            */
+              /*
             val MePofilter = new MePoFilter(context, program)
             val funs = program.definedFunctions.filter(f=>f.isReach).sortWith( (fd1,fd2) => fd1 < fd2 ).reverse
             val m = funs.tail.filter(f => f.annotations.contains("lemma")).map( f => (f, MePofilter.genVC(f))).toMap
@@ -452,6 +451,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
               val res = MePofilter.filter(expression, m)
               prepareLemmas(solver, res)
             }
+            */
 
         } else prepareLemmas(solver, program.definedFunctions.filter(f=> f.annotations.contains("lemma"))) /* As before I come here ;) */
       }
