@@ -13,6 +13,5 @@ jdk:
     - oraclejdk7
 
 notifications:
-    email:
-        - xcodevn@gmail.com
+    email: xcodevn@gmail.com
     irc: "chat.freenode.net#xcode-leon"
