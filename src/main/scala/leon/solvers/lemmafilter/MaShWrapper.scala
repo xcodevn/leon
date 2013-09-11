@@ -13,7 +13,7 @@ object MaSh {
   import leon._
 
   // create new reporter cause we don't use LeonContext
-  val reporter = new DefaultReporter()
+  // val reporter = new DefaultReporter()
 
   var isOk = true
 
@@ -22,7 +22,7 @@ object MaSh {
       sys.env(name)
     } catch {
       case _: Throwable =>
-        reporter.error("Can NOT read " + name + " env variables")
+        // reporter.error("Can NOT read " + name + " env variables")
         // reporter.info("Disabled mash module")
         isOk = false // after setting this varible mash will be disable
         ""

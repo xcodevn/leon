@@ -19,7 +19,7 @@ class MaShFilter (context : LeonContext, prog: Program) extends Filter {
    * Create our own Z3 solver
    * Doing some more stuff for correctly running of the solver (that is the problem of a state machine :[ )
    */
-  val fairZ3 = {val sol = new FairZ3Solver(context); sol.setProgram(prog); sol.getNewSolver; sol}
+  val fairZ3 = {val sol = new FairZ3SolverFactory(context, prog); sol.getNewSolver; sol}
 
   // create new reporter cause we don't use LeonContext
   // val reporter = new DefaultReporter() ; don't need it anymore ;)
@@ -32,7 +32,7 @@ class MaShFilter (context : LeonContext, prog: Program) extends Filter {
    * Hmmm, I don't think this function returns a VC, I want it return the body of function (property), So I can unfold it and then extract features
    */
   def genVC(funDef: FunDef): Expr = {
-    context.reporter.warning("FIXME: We need a real VC, not just function's body")
+    context.reporter.info("FIXME: We need a real VC, not just function's body")
     def getImple() = funDef.implementation match {
       case Some(r) => r
       case _ => Error("Error")
@@ -151,6 +151,8 @@ class MaShFilter (context : LeonContext, prog: Program) extends Filter {
         MaSh.learn(funName, parents, features, deps)
         funName
     })
+
+    fairZ3.free()
   }
 
   /* 
@@ -176,6 +178,8 @@ class MaShFilter (context : LeonContext, prog: Program) extends Filter {
     
     val suggestions = MaSh.query("We_need_a_name_for_it", parents, features)
     val names = suggestions.map(  a => a match { case (b,c) => b} )
+
+    fairZ3.free()
     m.keySet.filter(f => names.contains(f.id.name.toString)).toSeq
   }
 

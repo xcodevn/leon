@@ -157,12 +157,6 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
       MaShFilter.train
     }
 
-    val solvers0 : Seq[Solver] = trivialSolver :: fairZ3 :: Nil
-    val solvers: Seq[Solver] = timeout match {
-      case Some(t) => solvers0.map(s => new TimeoutSolver(s, 1000L * t))
-      case None => solvers0
-    }
-
     val baseSolvers : Seq[SolverFactory[Solver]] = fairZ3 :: Nil
 
     val solvers: Seq[SolverFactory[Solver]] = timeout match {

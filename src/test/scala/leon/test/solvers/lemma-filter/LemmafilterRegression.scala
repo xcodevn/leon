@@ -17,7 +17,7 @@ class LemmafilterRegression extends LeonTestSuite {
   private case class Output(report : VerificationReport, reporter : Reporter)
 
   private def mkPipeline : Pipeline[List[String],VerificationReport] =
-    leon.plugin.ExtractionPhase andThen leon.SubtypingPhase andThen leon.verification.AnalysisPhase
+    leon.plugin.ExtractionPhase andThen leon.utils.SubtypingPhase andThen leon.verification.AnalysisPhase
 
   private def mkTest(file : File, leonOptions : Seq[LeonOption], forError: Boolean)(block: Output=>Unit) = {
     val fullName = file.getPath()
@@ -33,15 +33,9 @@ class LemmafilterRegression extends LeonTestSuite {
       assert(file.exists && file.isFile && file.canRead,
              "Benchmark %s is not a readable file".format(displayName))
 
-      val ctx = LeonContext(
-        settings = Settings(
-          synthesis = false,
-          xlang     = false,
-          verify    = true
-        ),
+      val ctx = testContext.copy(
         options = leonOptions.toList,
-        files = List(file),
-        reporter = new TestSilentReporter
+        files   = List(file)
       )
 
       val pipeline = mkPipeline
@@ -74,7 +68,7 @@ class LemmafilterRegression extends LeonTestSuite {
     assert(report.totalConditions === report.totalValid,
            "All verification conditions ("+report.totalConditions+") should be valid.")
     assert(reporter.errorCount === 0)
-    // assert(reporter.warningCount === 0)  ; we dont use this because my code yields some warning for development purpose ;)
+    assert(reporter.warningCount === 0)
   }
 
   forEachFileIn("invalid") { output =>
