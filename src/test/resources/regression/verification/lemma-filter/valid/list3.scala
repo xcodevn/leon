@@ -25,9 +25,18 @@ object Reverse {
   @induct
   def app_assoc(l1: List, l2: List, l3: List) = { app(l1, app(l2, l3)) == app( app(l1, l2), l3) } holds
 
+  def nthodd(n: Int): Int = 2*n - 1
+  def sumnodd(n: Int):Int = if (n == 1) 1 else nthodd(n) + sumnodd(n-1)
+
+  @lemma
+  def odd_sum_lemma(n: Int): Boolean = {
+    sumnodd(7) == 7*7
+  } holds
+
   @lemma
   @induct
   def rev_app(l1: List, l2: List) = {
     rev(app(l1, l2) ) == app(rev(l2), rev(l1) )
   } holds
+
 }

@@ -59,8 +59,8 @@ class LemmafilterRegression extends LeonTestSuite {
       _.endsWith(".scala"))
 
     for(f <- fs) {
-      mkTest(f, List(LeonFlagOption("training", true), LeonValueOption("filter", "MePo")), forError)(block)
-      mkTest(f, List(LeonFlagOption("training", true), LeonValueOption("filter", "MaSh")), forError)(block)
+      mkTest(f, List(LeonFlagOption("training", true), LeonValueOption("filter", "MePo"), LeonValueOption("timeout", "200")), forError)(block)
+      mkTest(f, List(LeonFlagOption("training", true), LeonValueOption("filter", "MaSh"), LeonValueOption("timeout", "200")), forError)(block)
     }
   }
   

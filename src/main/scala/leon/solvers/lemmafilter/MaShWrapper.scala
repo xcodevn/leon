@@ -83,12 +83,12 @@ object MaSh {
    * 
    * Return a list of relevance facts sorted in decrease order
    */
-  def query(name: String, parents: String, features: Set[(String, Double)], hints: Set[String] = Set[String]()) = {
+  def query(name: String, parents: String, features: Set[(String, Double)], hints: Set[String] = Set[String](), num: Int = 2) = {
     val cmd = {
       if (hints.isEmpty) "? %s: %s; %s".format(name, parents, features.map(feature2String(_)).mkString(" "))
       else "? %s: %s; %s; %s".format(name, parents, features.map(feature2String(_)).mkString(" "), hints.mkString(" "))
     }
-    val output = run(cmd)
+    val output = run(cmd, num)
     // reporter.info("Result: " + output)
 
     str2Suggest(output)
@@ -97,7 +97,7 @@ object MaSh {
   /*
    * Execute command line and return output file content
    */
-  def run(cmd: String): String = {
+  def run(cmd: String, num: Int = 2): String = {
     // Create input file
     if (isOk) {
       try {
@@ -107,7 +107,7 @@ object MaSh {
         out.close
 
         val run = "%s -q --saveModel --statistics --nb --modelFile %s --dictsFile %s --log %s --numberOfPredictions %d --inputFile %s  --predictions %s".format(
-          command, MaShHome + "/mash_model.pickle", MaShHome + "/mash_dict.pickle", MaShHome + "/mash_log.txt", 2, f.getAbsolutePath, MaShHome + "/mash_sugg.txt")
+          command, MaShHome + "/mash_model.pickle", MaShHome + "/mash_dict.pickle", MaShHome + "/mash_log.txt", num, f.getAbsolutePath, MaShHome + "/mash_sugg.txt")
 
         run.!! // reporter.info("Output: " + run.!!)
         f.deleteOnExit()

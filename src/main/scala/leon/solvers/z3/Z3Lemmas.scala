@@ -84,22 +84,30 @@ trait Z3Lemmas {
           }
 
           // reporter.info(" *** Multipatterns for lemma [%s].".format(fname))
-          val lst = for (mp <- multiPatterns) yield {
-            // reporter.info("--- ")
-            // reporter.info("--- " + mp.mkString("[", "; ", "]"))
+          if (!multiPatterns.isEmpty) {
+            val lst = for (mp <- multiPatterns) yield {
+              // reporter.info("--- ")
+              // reporter.info("--- " + mp.mkString("[", "; ", "]"))
 
-            mp.toSeq.map(c => toZ3Formula(c, initialMap).get)
+              mp.toSeq.map(c => toZ3Formula(c, initialMap).get)
+            }
+
+            // reporter.info(lst.toSeq)
+
+            val z3MultiPatterns = z3.mkPattern(lst.toSeq.flatten: _*)
+
+            val axiom: Z3AST = z3.mkForAll(0, Seq(z3MultiPatterns), namedBounds, quantBody)
+
+            // reporter.info("Look ! I made an axiom !")
+            // reporter.info(axiom.toString)
+            solver.assertCnstr(axiom)
+          } else {
+            val axiom: Z3AST = z3.mkForAll(0, Seq(), namedBounds, quantBody)
+
+            // reporter.info("Look ! I made an axiom !")
+            // reporter.info(axiom.toString)
+            solver.assertCnstr(axiom)
           }
-
-          // reporter.info(lst.toSeq)
-
-          val z3MultiPatterns = z3.mkPattern(lst.toSeq.flatten: _*)
-
-          val axiom: Z3AST = z3.mkForAll(0, Seq(z3MultiPatterns), namedBounds, quantBody)
-
-          // reporter.info("Look ! I made an axiom !")
-          // reporter.info(axiom.toString)
-          solver.assertCnstr(axiom)
         }
       } else {
           reporter.error("[%s] is NOT a nine lemma!".format(funDef.id.name))

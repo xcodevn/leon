@@ -20,6 +20,6 @@ trait Filter {
   // other function for filter operation
   //
   // This function will return a subset of lemmas which are really necessary for proof of `conjecture`
-  def filter(conjecture: Expr, m: Map[FunDef, Expr]): Seq[FunDef]
+  def filter(conjecture: Expr, m: Map[FunDef, Expr], num_lemmas: Int): Seq[FunDef]
 }
 

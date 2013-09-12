@@ -30,4 +30,11 @@ object Reverse {
   def rev_app(l1: List, l2: List) = {
     rev(app(l1, l2) ) == app(rev(l2), rev(l1) )
   } holds
+
+  def nthodd(n: Int): Int = 2*n - 1
+  def sumnodd(n: Int):Int = if (n == 1) 1 else nthodd(n) + sumnodd(n-1)
+
+  def odd_sum_lemma(n: Int): Boolean = {
+    sumnodd(7) == 7*7
+  } holds
 }

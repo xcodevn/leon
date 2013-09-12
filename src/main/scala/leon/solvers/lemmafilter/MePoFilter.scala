@@ -105,23 +105,26 @@ class MePoFilter (context : LeonContext, prog: Program) extends Filter {
     size_r / cs.size
   }
 
-  def get_relevant_clauses(rs: Set[String], t: Set[(FunDef, Seq[Z3AST])], p: Double): Set[(FunDef, Seq[Z3AST])] = {
+  def get_relevant_clauses(rs: Set[String], t: Set[(FunDef, Seq[Z3AST])], p: Double, num: Int): Set[(FunDef, Seq[Z3AST])] = {
     context.reporter.info("Current MePo status: RS: %s, T: %s, P: %.2f".format(rs.toString, t.toSeq.map(p => {val (fd, ex) = p ; fd.id.name.toString} ), p))
-    val (rel, new_t) = t.span( e => { val (fd, ex) = e; get_clause_mark(rs, ex) >= p } )
+    val rel = t.filter( e => { val (fd, ex) = e; get_clause_mark(rs, ex) >= p } )
+    val new_t = t.filterNot( e => { val (fd, ex) = e; get_clause_mark(rs, ex) >= p } )
     if (!rel.isEmpty) {
       val new_p = p + (1  - p) / CONST_C
       val new_rs = rs ++  rel.toSeq.foldLeft ( Set.empty[String] ) ( (set, p) => set ++ { val (fd, ex) = p; getSymbolSet(ex) } )
 
       context.reporter.info("Added " + rel.map( p => {val (fd, seq) =p; fd.id.name.toString } ).toString + " into relevance set ")
 
-      rel ++ get_relevant_clauses(new_rs, new_t, new_p)
+      if (num - rel.size > 0) 
+        rel ++ get_relevant_clauses(new_rs, new_t, new_p, num - rel.size)
+      else rel
     } else rel
   }
 
-  def filter(conj: Expr, m: Map[FunDef, Expr]): Seq[FunDef] = {
+  def filter(conj: Expr, m: Map[FunDef, Expr], num: Int = 2): Seq[FunDef] = {
     val T = m.toSet.map( (p: (FunDef, Expr)) => { val (fd, ex) = p ; (fd, fairZ3.unfold(ex, NUM_UNFOLD)) } )
 
-    get_relevant_clauses( getSymbolSet(fairZ3.unfold(conj, NUM_UNFOLD)), T, CONST_P ).toSeq.map( p => { val (fd, ex) = p; fd } )
+    get_relevant_clauses( getSymbolSet(fairZ3.unfold(conj, NUM_UNFOLD)), T, CONST_P, num ).toSeq.map( p => { val (fd, ex) = p; fd } )
   }
 
 }

@@ -160,7 +160,7 @@ class MaShFilter (context : LeonContext, prog: Program) extends Filter {
    * FairZ3Solver should be the only place we keep state variables, I have a strong believe that priciple will help us have a better system
    * Just believe in ME :-)
    */
-  def filter(conj: Expr, m: Map[FunDef, Expr]): Seq[FunDef] = {
+  def filter(conj: Expr, m: Map[FunDef, Expr], num_lemmas: Int = 2): Seq[FunDef] = {
     /* 
      * This function doing like a proxy (if you know what proxy is), it fowards all filter request to MaSh wrapper with a little
      * modification
@@ -175,7 +175,7 @@ class MaShFilter (context : LeonContext, prog: Program) extends Filter {
     
     val parents = m.keySet.toList.sortWith( (fd1,fd2) => fd2 < fd1).head.id.name.toString
     
-    val suggestions = MaSh.query("We_need_a_name_for_it", parents, features)
+    val suggestions = MaSh.query("We_need_a_name_for_it", parents, features, Set(), num_lemmas)
     val names = suggestions.map(  a => a match { case (b,c) => b} )
 
     m.keySet.filter(f => names.contains(f.id.name.toString)).toSeq

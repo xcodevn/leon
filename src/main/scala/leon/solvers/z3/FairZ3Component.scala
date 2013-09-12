@@ -14,5 +14,6 @@ trait FairZ3Component extends LeonComponent {
     LeonFlagOptionDef("codegen",            "--codegen",            "Use compiled evaluator instead of interpreter"),
     LeonFlagOptionDef("fairz3:unrollcores", "--fairz3:unrollcores", "Use unsat-cores to drive unrolling while remaining fair"),
     LeonFlagOptionDef("lemmas",             "--lemmas",             "Magical lemma mystery train"),
-    LeonValueOptionDef("filter",            "--filter=MePo|MaSh",   "Using a filter (MePo or MaSh) for reducing the number of lemmas"))
+    LeonValueOptionDef("filter",            "--filter=MePo|MaSh",   "Using a filter (MePo or MaSh) for reducing the number of lemmas"),
+    LeonValueOptionDef("num-lemmas",        "--num-lemmas=n",       "The filter only get first n return result as lemmas for the proof"))
 }
