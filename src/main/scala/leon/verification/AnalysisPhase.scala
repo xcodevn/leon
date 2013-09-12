@@ -16,6 +16,8 @@ import scala.collection.mutable.{Set => MutableSet}
 
 import leon.solvers.lemmafilter._
 
+import java.io._
+
 object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
   val name = "Analysis"
   val description = "Leon Verification"
@@ -25,7 +27,8 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
   override val definedOptions : Set[LeonOptionDef] = Set(
     LeonValueOptionDef("functions", "--functions=f1:f2", "Limit verification to f1,f2,..."),
     LeonValueOptionDef("timeout",   "--timeout=T",       "Timeout after T seconds when trying to prove a verification condition."),
-    LeonFlagOptionDef("training",   "--training",        "Train leon by using @depend")
+    LeonFlagOptionDef("training",   "--training",        "Train leon by using @depend"),
+    LeonFlagOptionDef("create-testcase",   "--create-testcase",        "Write running options and output of verification into a file, and re-check in later running times ")
   )
 
   def generateVerificationConditions(reporter: Reporter, program: Program, functionsToAnalyse: Set[String]): Map[FunDef, List[VerificationCondition]] = {
@@ -52,7 +55,7 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
                      tactic.generateMiscCorrectnessConditions(funDef) ++
                      tactic.generateArrayAccessChecks(funDef)
 
-        allVCs += funDef -> funVCs.toList
+                     allVCs += funDef -> funVCs.toList.sortWith( (fvc1, fvc2) => fvc1.condition.toString < fvc2.condition.toString)
       }
     }
 
@@ -130,10 +133,43 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
     report
   }
 
+  def createTestcase(ctx: LeonContext, rp: VerificationReport) = {
+    def infoLine(vc : VerificationCondition) : String = {
+      "%-25s %-9s %9s %-8s %-10s %-7s".format(
+        vc.funDef.id.toString, 
+        vc.kind,
+        vc.posInfo,
+        vc.status,
+        vc.tacticStr,
+        vc.solverStr
+        )
+    }
+    val opt = ctx.options.foldLeft ( List[String]() ) ( ( lst, op) => {
+      val s = Set[String]("filter", "training", "timeout")
+      op match {
+        case LeonFlagOption(key, va) => if (s.contains(key)) "%s:%s".format(key, va.toString) :: lst else lst
+
+        case LeonValueOption(key, va) => if (s.contains(key)) "%s:%s".format(key, va) :: lst else lst
+      }
+    })
+
+    val fn = ctx.files.head.getName
+    val pa = ctx.files.head.getParentFile
+    val f = new File(pa, fn + ".testcase")
+    val out = new PrintWriter(f, "UTF-8")
+    val txtrp = rp.conditions.map(infoLine).mkString("\n")
+    out.println(opt.mkString(" "))
+    out.println(txtrp)
+    out.close
+  }
+
+  
+
   def run(ctx: LeonContext)(program: Program) : VerificationReport = {
     var functionsToAnalyse   = Set[String]()
     var timeout: Option[Int] = None
     var doTraining: Boolean = false
+    var create_testcase: Boolean = false
 
     for(opt <- ctx.options) opt match {
       case LeonValueOption("functions", ListValue(fs)) =>
@@ -143,6 +179,8 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
         timeout = v.asInt(ctx)
 
       case LeonFlagOption("training", v) => doTraining = v
+
+      case LeonFlagOption("create-testcase", v) => create_testcase = v
 
       case _ =>
     }
@@ -181,6 +219,10 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
 
     solvers.foreach(_.free())
 
+    if (create_testcase) {
+      reporter.info("Writing down options and output...")
+      createTestcase(ctx, report)
+    }
     report
   }
 }

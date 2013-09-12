@@ -1,0 +1,10 @@
+filter:MaSh training:true timeout:10
+appnil                    postcond.           valid    induction  Z3-f+to
+appnil                    postcond.           valid    induction  Z3-f+to
+app_assoc                 postcond.           valid    induction  Z3-f+to
+app_assoc                 postcond.           valid    induction  Z3-f+to
+odd_sum_lemma             postcond.           valid               Z3-f+to
+rev_app0                  postcond.           valid    induction  Z3-f+to
+rev_app0                  postcond.           valid    induction  Z3-f+to
+rev_app                   postcond.           valid    induction  Z3-f+to
+rev_app                   postcond.           unknown  induction         

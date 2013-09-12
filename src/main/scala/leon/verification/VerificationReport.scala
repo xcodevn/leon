@@ -10,7 +10,7 @@ class VerificationReport(val fvcs: Map[FunDef, List[VerificationCondition]]) {
       (vc1,vc2) =>
         val id1 = vc1.funDef
         val id2 = vc2.funDef
-        if(id1 != id2) id1 < id2 else vc1 < vc2
+        if(id1 != id2) id1 < id2 else vc1.condition.toString < vc2.condition.toString
     }
 
   lazy val totalConditions : Int = conditions.size
