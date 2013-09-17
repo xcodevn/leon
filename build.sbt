@@ -35,3 +35,5 @@ fork in test := true
 logBuffered in Test := false
 
 testOptions in Test += Tests.Argument("-oD")
+
+parallelExecution in Test := false

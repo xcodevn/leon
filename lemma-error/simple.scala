@@ -16,11 +16,15 @@ object Reverse {
     case Cons(h, t) => app(rev(t), Cons(h, Nil()))
   }
 
-  @lemma
+  def subhundred(x: Int) = x - 100
+  def double(x: Int) = subhundred(x)*2 + 200
+
+  def equal_lemma(x: Int): Boolean = { if (x > 0)  double(x+1)  == 2+2*x else true } holds
+  def equal_lemma1(x: Int): Boolean = { if (x > 0)  double(double(x+1))  == 4+4*x else true } holds
+
   @induct
   def appnil_lemma(l: List) = { app(l, Nil() ) == l } holds
 
-  @lemma
   @induct
   def app_assoc_lemma(l1: List, l2: List, l3: List) = { app(l1, app(l2, l3)) == app( app(l1, l2), l3) } holds
 
@@ -31,11 +35,10 @@ object Reverse {
   } holds
 
 
-  @lemma
   def rev_rev_lemma(l: List):Boolean = {
     l match {
       case Nil() => true
-      case Cons(x, xs) => rev_rev_lemma(xs)  //&&
+      case Cons(x, xs) => rev_rev_lemma(xs)
                           // rev(app(rev(xs), Cons(x, Nil()))) == app(rev(Cons(x, Nil())), rev(rev(xs)))
                           // l == app(rev(Cons(x, Nil())), rev(rev(xs)))
     }
