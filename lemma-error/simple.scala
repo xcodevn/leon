@@ -34,15 +34,35 @@ object Reverse {
     app(rev(l1), rev(l2)) == rev(app(l2, l1))
   } holds
 
-
   def rev_rev_lemma(l: List):Boolean = {
     l match {
       case Nil() => true
-      case Cons(x, xs) => rev_rev_lemma(xs)
+      case Cons(x, xs) => rev_rev_lemma(xs) &&
+                          rev(app(rev(xs), Cons(x, Nil()))) == app(rev(Cons(x, Nil())), rev(rev(xs)))
+                          // l == app(rev(Cons(x, Nil())), rev(rev(xs)))
+    }
+  } ensuring {res => res && rev(rev(l)) == l}
+
+  def rev_rev_lemma1(l: List):Boolean = {
+    l match {
+      case Nil() => true
+      case Cons(x, xs) => rev_rev_lemma(xs) && rev(rev(Cons(x,xs))) == l
                           // rev(app(rev(xs), Cons(x, Nil()))) == app(rev(Cons(x, Nil())), rev(rev(xs)))
                           // l == app(rev(Cons(x, Nil())), rev(rev(xs)))
     }
   } ensuring {res => res && rev(rev(l)) == l}
 
+  def rev_rev_lemma2(l: List):Boolean = {
+    l match {
+      case Nil() => rev(rev(l)) == l
+      case Cons(x, xs) => rev_rev_lemma(xs) && rev(rev(Cons(x,xs))) == Cons(x, xs) &&
+                          // rev(app(rev(xs), Cons(x, Nil()))) == app(rev(Cons(x, Nil())), rev(rev(xs)))
+                          app(Cons(x, Nil()), rev(rev(xs))) != Nil()
+    }
+  } holds
+
+  def rev_rev_lemma3(x: Int, xs: List): Boolean =  { 
+    rev(rev(Cons(x, xs))) == Cons(x, xs)
+  } holds
 }
 

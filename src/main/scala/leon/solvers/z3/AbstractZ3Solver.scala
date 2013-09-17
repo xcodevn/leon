@@ -440,7 +440,6 @@ trait AbstractZ3Solver extends SolverFactory[Solver] {
             z3Vars = z3Vars + (id -> newAST)
             exprToZ3Id += (v -> newAST)
             z3IdToExpr += (newAST -> v)
-            println("NEW var " + newAST.toString)
             newAST
           }
         }
@@ -718,8 +717,8 @@ trait AbstractZ3Solver extends SolverFactory[Solver] {
                   throw new Exception("encountered OpAsArray")
                 }
                 case other => {
-                  System.err.println("Don't know what to do with this declKind : " + other)
-                  System.err.println("The arguments are : " + args)
+                  // System.err.println("Don't know what to do with this declKind : " + other)
+                  // System.err.println("The arguments are : " + args)
                   throw new CantTranslateException(t)
                 }
               }
@@ -768,12 +767,12 @@ trait AbstractZ3Solver extends SolverFactory[Solver] {
           z3.getDeclKind(decl) match {
             case OpTrue => BooleanLiteral(true)
             case OpFalse => BooleanLiteral(false)
-            case _ => throw e
+            case t@_ => throw e
           }
         }
       }
       case Z3NumeralAST(Some(v)) => IntLiteral(v)
-      case _ => throw e
+      case t@_ => throw e
     }
 
     try {
