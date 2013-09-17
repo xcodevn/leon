@@ -12,7 +12,7 @@ import purescala.Common._
 
 class Z3LemmaFilter(context: LeonContext) {
 
-  private lazy val lemmaPost : Expr = ResultVariable().setType(BooleanType)
+  // private lazy val lemmaPost : Expr = ResultVariable().setType(BooleanType)
 
   def prepareLemmasWithFilter(solver : Z3Solver, ex: Expr) : Unit = {
     /*
