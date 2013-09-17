@@ -578,6 +578,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
             foundAnswer(None)
 
           case Some(true) => // SAT
+            reporter.info("SAT")
 
             reporter.debug("SAT")
 
