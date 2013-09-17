@@ -387,6 +387,9 @@ trait AbstractZ3Solver extends SolverFactory[Solver] {
       exprToZ3Id.filter(p => p._1.isInstanceOf[Variable]).map(p => (p._1.asInstanceOf[Variable].id -> p._2))
     }
 
+    // println("z3var " + z3Vars.toString)
+    // println("id to ex " + z3IdToExpr.toString)
+
     def rec(ex: Expr): Z3AST = { 
       //println("Stacking up call for:")
       //println(ex)
@@ -407,6 +410,7 @@ trait AbstractZ3Solver extends SolverFactory[Solver] {
         case Let(i, e, b) => {
           val re = rec(e)
           z3Vars = z3Vars + (i -> re)
+          z3IdToExpr += (re -> Variable(i))
           val rb = rec(b)
           z3Vars = z3Vars - i
           rb
@@ -419,8 +423,10 @@ trait AbstractZ3Solver extends SolverFactory[Solver] {
           z3IdToExpr += (newAST -> e)
           newAST
         }
-        case v @ Variable(id) => z3Vars.get(id) match {
-          case Some(ast) => ast
+        case v @ Variable(id) => 
+          z3Vars.get(id) match {
+          case Some(ast) => 
+            ast
           case None => {
             // if (id.isLetBinder) {
             //   scala.sys.error("Error in formula being translated to Z3: identifier " + id + " seems to have escaped its let-definition")
@@ -434,6 +440,7 @@ trait AbstractZ3Solver extends SolverFactory[Solver] {
             z3Vars = z3Vars + (id -> newAST)
             exprToZ3Id += (v -> newAST)
             z3IdToExpr += (newAST -> v)
+            println("NEW var " + newAST.toString)
             newAST
           }
         }
@@ -575,6 +582,7 @@ trait AbstractZ3Solver extends SolverFactory[Solver] {
 
     try {
       val res = Some(rec(expr))
+      z3IdToExpr ++= ( z3Vars map ( (p) => { val (a,b) = p ; ( b -> Variable(a) )  } ))
       res
     } catch {
       case e: CantTranslateException => None
@@ -784,7 +792,12 @@ trait AbstractZ3Solver extends SolverFactory[Solver] {
   }
 
   def idToFreshZ3Id(id: Identifier): Z3AST = {
-    z3.mkFreshConst(id.uniqueName, typeToSort(id.getType))
+    val idd = z3.mkFreshConst(id.uniqueName, typeToSort(id.getType))
+    val newid = FreshIdentifier(idd.toString).setType(id.getType)
+    z3IdToExpr += (idd -> Variable(newid))
+    exprToZ3Id += (Variable(newid) ->idd)
+
+    idd
   }
 
 }

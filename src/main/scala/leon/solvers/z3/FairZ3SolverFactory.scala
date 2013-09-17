@@ -77,6 +77,8 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
   // This is fixed.
   protected[leon] val z3cfg = new Z3Config(
     "MODEL" -> true,
+    "TRACE" -> true,
+    "TRACE_FILE_NAME" -> "\"hi.txt\"",
     "MBQI" -> false,                
     "TYPE_CHECK" -> true,
     "WELL_SORTED_CHECK" -> true
@@ -464,11 +466,13 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
         }
       }
 
+      //println(variablesOf(expression))
       varsInVC ++= variablesOf(expression)
 
       frameExpressions = (expression :: frameExpressions.head) :: frameExpressions.tail
 
       val newClauses = unrollingBank.scanForNewTemplates(expression)
+      //println("New clauses " + newClauses.toString)
 
       for (cl <- newClauses) {
         solver.assertCnstr(cl)
@@ -536,14 +540,35 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
 
         reporter.debug(" - Running Z3 search...")
 
-        // reporter.debug("Searching in:\n"+solver.getAssertions.toSeq.mkString("\nAND\n"))
-        // reporter.debug("Unroll.  Assumptions:\n"+unrollingBank.z3CurrentZ3Blockers.mkString("  &&  "))
-        // reporter.debug("Userland Assumptions:\n"+assumptionsAsZ3.mkString("  &&  "))
+        reporter.debug("Searching in:\n"+solver.getAssertions.toSeq.mkString("\nAND\n"))
+        reporter.debug("Unroll.  Assumptions:\n"+unrollingBank.z3CurrentZ3Blockers.mkString("  &&  "))
+        reporter.debug("Userland Assumptions:\n"+assumptionsAsZ3.mkString("  &&  "))
 
-        solver.push() // FIXME: remove when z3 bug is fixed
+        var flag : Boolean = true
+        var count: Int = 0
+        while (flag) {
+          solver.push() // FIXME: remove when z3 bug is fixed
+          solver.checkAssumptions((assumptionsAsZ3 ++ unrollingBank.z3CurrentZ3Blockers) :_*)
+          solver.pop()  // FIXME: remove when z3 bug is fixed
+          try {
+            val qua = solver.getQuantifierInstance
+            solver.assertCnstr(qua)
+            // println("First " + qua.toString)
+            val ex= fromZ3Formula(null, qua)
+            // println("Second " + toZ3Formula(ex).toString)
+            //println(ex)
+            assertCnstr(ex)
+            count = count + 1
+            println("COunt " + count.toString)
+          } catch {
+            case e: Throwable => 
+              println("Loi~")
+              println(e)
+              flag = false
+          }
+        }
+
         val res = solver.checkAssumptions((assumptionsAsZ3 ++ unrollingBank.z3CurrentZ3Blockers) :_*)
-        solver.pop()  // FIXME: remove when z3 bug is fixed
-
         reporter.debug(" - Finished search with blocked literals")
 
         res match {
@@ -630,6 +655,29 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
                 reporter.debug(" - Running search without blocked literals (w/o lucky test)")
               }
 
+              var flag : Boolean = true
+              var co: Int = 0
+              while (flag) {
+                solver.push() // FIXME: remove when z3 bug is fixed
+                solver.checkAssumptions(assumptionsAsZ3 : _*)
+                solver.pop()  // FIXME: remove when z3 bug is fixed
+                try {
+                  val qua = solver.getQuantifierInstance
+                  solver.assertCnstr(qua)
+                  // println("First " + qua.toString)
+                  val ex= fromZ3Formula(null, qua)
+                  // println("Second " + toZ3Formula(ex).toString)
+                  //println(ex)
+                  assertCnstr(ex)
+                  co = co + 1
+                  println("OOO " + co.toString)
+                } catch {
+                  case e: Throwable => 
+                    println("Loi~")
+                    println(e)
+                    flag = false
+                }
+              }
               solver.push() // FIXME: remove when z3 bug is fixed
               val res2 = solver.checkAssumptions(assumptionsAsZ3 : _*)
               solver.pop()  // FIXME: remove when z3 bug is fixed
@@ -671,6 +719,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
             }
 
             if(!foundDefinitiveAnswer) { 
+
               reporter.debug("- We need to keep going.")
 
               val toRelease = unrollingBank.getZ3BlockersToUnlock
