@@ -452,10 +452,14 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
             val MePofilter = new MePoFilter(context, program)
             val curFun = program.definedFunctions.filter(f=>f.isReach).sortWith( (fd1,fd2) => fd1 < fd2 ).reverse.head
             val funs = curFun +: program.definedFunctions.filter(f => f < curFun)
-            val m = funs.tail.filter(f => f.annotations.contains("lemma")).map( f => (f, MePofilter.genVC(f))).toMap
-            if (m.size > 0) {
-              val res = MePofilter.filter(expression, m, num_lemmas)
-              prepareLemmas(solver, res)
+            if (curFun.annotations.contains("depend")) {
+              curFun.dependencies match { case Some(deps) => prepareLemmas(solver, funs.filter(f => deps.contains(f.id.name.toString))); case _ => }
+            } else {
+              val m = funs.tail.filter(f => f.annotations.contains("lemma")).map( f => (f, MePofilter.genVC(f))).toMap
+              if (m.size > 0) {
+                val res = MePofilter.filter(expression, m, num_lemmas)
+                prepareLemmas(solver, res)
+              }
             }
             MePofilter.fairZ3.free() // I don't need you anymore
 
