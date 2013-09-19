@@ -323,7 +323,8 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
         val (newExprs, newBlocks) = template.instantiate(id, fi.args)
 
         for((i, fis2) <- newBlocks) {
-          registerBlocker(nextGeneration(gen), i, fis2)
+          if (!unlockedSet(i))
+            registerBlocker(nextGeneration(gen), i, fis2)
           if(i == id) {
             reintroducedSelf = true
           }
@@ -554,7 +555,15 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
           case None =>
             // reporter.warning("Z3 doesn't know because: " + z3.getSearchFailure.message)
             reporter.warning("Z3 doesn't know because ??")
-            foundAnswer(None)
+
+            /* 
+             * In some cases Z3 returns unknown but also having a `suggested model`
+             * Anw, we're lucky sometimes ;-)
+             */
+            val (isValid, model) = validateModel(solver.getModel, entireFormula, varsInVC, silenceErrors = false)
+
+            if (isValid) foundAnswer(Some(true), model)
+            else foundAnswer(None)
 
           case Some(true) => // SAT
 
