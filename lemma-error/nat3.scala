@@ -15,6 +15,7 @@ object Nat {
   
   @lemma
   @depend()
+  @induct
   def assoc_plus_lemma(a: Nat, b: Nat, c: Nat): Boolean = {
     plus(a, plus(b, c)) == plus(plus(a, b), c)
   } holds
