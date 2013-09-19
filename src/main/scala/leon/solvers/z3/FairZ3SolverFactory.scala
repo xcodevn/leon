@@ -234,6 +234,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
 
     def getZ3BlockersToUnlock: Seq[Z3AST] = {
       if (!blockersInfo.isEmpty) {
+        println("Blocker values: " + blockersInfo.map( r => (r._1, r._2._1) ))
         val minGeneration = blockersInfo.values.map(_._1).min
 
         blockersInfo.filter(_._2._1 == minGeneration).toSeq.map(_._1)
@@ -312,6 +313,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
       if(unlockedSet(id)) return Seq.empty
 
       val (gen, origGen, _, fis) = blockersInfo(id)
+      println("blocker info " + blockersInfo(id).toString)
 
       blockersInfo -= id
       val twice = wasUnlocked(id)
@@ -323,9 +325,10 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
       for(fi <- fis) {
         val template              = getTemplate(fi.funDef)
         val (newExprs, newBlocks) = template.instantiate(id, fi.args)
+        println("New blockers " + newBlocks.toString)
 
         for((i, fis2) <- newBlocks) {
-          registerBlocker(nextGeneration(gen), i, fis2)
+          if (!unlockedSet(i)) registerBlocker(nextGeneration(gen), i, fis2)
           if(i == id) {
             reintroducedSelf = true
           }
@@ -516,13 +519,14 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
        * So I use a trick to workaround this by pre-unrolling enough times for some special example, so I can focus on the
        * main error of Leon
        */
-      val times_of_preunrolling: Int = 0
+      val times_of_preunrolling: Int = 4
       var count = 0
       reporter.debug("Pre-unrolling " + times_of_preunrolling + " times")
       while (count < times_of_preunrolling) {
               val toRelease = unrollingBank.getZ3BlockersToUnlock
+              println("Release " + toRelease.toString)
 
-              for(id <- toRelease) {
+              for(id <- toRelease.sortWith(_.toString < _.toString)) {
                 val newClauses = unrollingBank.unlock(id)
 
                 for(ncl <- newClauses) {
@@ -538,11 +542,13 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
         //val blockingSetAsZ3 : Seq[Z3AST] = blockingSet.toSeq.map(toZ3Formula(_).get)
         // println("Blocking set : " + blockingSet)
 
+        println(solver.getAssertions.toSeq.mkString("(assert ", ")\n(assert ", ")\n"))
+        println(unrollingBank.z3CurrentZ3Blockers.mkString("(assert ",")\n(assert ",")\n"))
         reporter.debug(" - Running Z3 search...")
 
-        reporter.debug("Searching in:\n"+solver.getAssertions.toSeq.mkString(")\n(assert "))
-        reporter.debug("Unroll.  Assumptions:\n"+unrollingBank.z3CurrentZ3Blockers.mkString(")\n(assert "))
-        reporter.debug("Userland Assumptions:\n"+assumptionsAsZ3.mkString("  &&  "))
+        reporter.debug("Searching in:\n"+solver.getAssertions.toSeq.mkString("(assert ", ")\n(assert ", ")\n"))
+        reporter.debug("Unroll.  Assumptions:\n"+unrollingBank.z3CurrentZ3Blockers.mkString("(assert ",")\n(assert ",")\n"))
+        reporter.debug("Userland Assumptions:\n"+assumptionsAsZ3.mkString("(assert ",")\n(assert ",")\n"))
 
 
         solver.push()
@@ -557,7 +563,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
             foundAnswer(None)
 
           case Some(true) => // SAT
-            reporter.info("SAT")
+            // reporter.info("SAT")
 
             reporter.debug("SAT")
 
@@ -661,10 +667,11 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
 
               adjustedForUnknowns match {
                 case Some(false) =>
-                  //reporter.debug("UNSAT WITHOUT Blockers")
+                  println("UNSAT WITHOUT Blockers")
                   foundAnswer(Some(false), core = z3CoreToCore(solver.getUnsatCore))
                 case Some(true) =>
-                  //reporter.debug("SAT WITHOUT Blockers")
+                  println("SAT WITHOUT Blockers")
+                  foundAnswer(None)
                   if (this.feelingLucky && !interrupted) {
                     // we might have been lucky :D
                     val (wereWeLucky, cleanModel) = validateModel(solver.getModel, entireFormula, varsInVC, silenceErrors = true)
