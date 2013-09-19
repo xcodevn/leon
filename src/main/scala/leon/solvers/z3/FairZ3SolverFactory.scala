@@ -234,7 +234,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
 
     def getZ3BlockersToUnlock: Seq[Z3AST] = {
       if (!blockersInfo.isEmpty) {
-        println("Blocker values: " + blockersInfo.map( r => (r._1, r._2._1) ))
+        // println("Blocker values: " + blockersInfo.map( r => (r._1, r._2._1) ))
         val minGeneration = blockersInfo.values.map(_._1).min
 
         blockersInfo.filter(_._2._1 == minGeneration).toSeq.map(_._1)
@@ -313,7 +313,6 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
       if(unlockedSet(id)) return Seq.empty
 
       val (gen, origGen, _, fis) = blockersInfo(id)
-      println("blocker info " + blockersInfo(id).toString)
 
       blockersInfo -= id
       val twice = wasUnlocked(id)
@@ -325,7 +324,6 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
       for(fi <- fis) {
         val template              = getTemplate(fi.funDef)
         val (newExprs, newBlocks) = template.instantiate(id, fi.args)
-        println("New blockers " + newBlocks.toString)
 
         for((i, fis2) <- newBlocks) {
           if (!unlockedSet(i)) registerBlocker(nextGeneration(gen), i, fis2)
@@ -524,7 +522,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
       reporter.debug("Pre-unrolling " + times_of_preunrolling + " times")
       while (count < times_of_preunrolling) {
               val toRelease = unrollingBank.getZ3BlockersToUnlock
-              println("Release " + toRelease.toString)
+              // println("Release " + toRelease.toString)
 
               for(id <- toRelease.sortWith(_.toString < _.toString)) {
                 val newClauses = unrollingBank.unlock(id)
@@ -560,7 +558,12 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
           case None =>
             // reporter.warning("Z3 doesn't know because: " + z3.getSearchFailure.message)
             reporter.warning("Z3 doesn't know because ??")
-            foundAnswer(None)
+            val z3model = solver.getModel
+
+            val (isValid, model) = validateModel(z3model, entireFormula, varsInVC, silenceErrors = false)
+
+            if (isValid) foundAnswer(Some(true), model)
+            else foundAnswer(None)
 
           case Some(true) => // SAT
             // reporter.info("SAT")
@@ -671,7 +674,6 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
                   foundAnswer(Some(false), core = z3CoreToCore(solver.getUnsatCore))
                 case Some(true) =>
                   println("SAT WITHOUT Blockers")
-                  foundAnswer(None)
                   if (this.feelingLucky && !interrupted) {
                     // we might have been lucky :D
                     val (wereWeLucky, cleanModel) = validateModel(solver.getModel, entireFormula, varsInVC, silenceErrors = true)
@@ -683,12 +685,17 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
 
                 case None =>
                   reporter.warning("Unknown w/o blockers.")
-                  if(false) {
-                    reporter.warning("(Forced stop)")
-                  } else {
-                    // reporter.warning("Z3 says [%s]".format(solver.getReasonUnknown))
+                  val (isValid, model) = validateModel(solver.getModel, entireFormula, varsInVC, silenceErrors = false)
+
+                  if (isValid) foundAnswer(Some(true), model)
+                  else {
+                    if(false) {
+                      reporter.warning("(Forced stop)")
+                    } else {
+                      // reporter.warning("Z3 says [%s]".format(solver.getReasonUnknown))
+                    }
+                    foundAnswer(None)
                   }
-                  foundAnswer(None)
               }
             }
 

@@ -11,14 +11,18 @@ object Nat {
     case Succ(a1) => Succ(plus(a1, b))
   }
 
-  def nat2Int(n: Nat): Int = n match {
-    case Zero() => 0
-    case Succ(n1) => 1 + nat2Int(n1)
-  }
-
   def int2Nat(n: Int): Nat = if (n == 0) Zero() else Succ(int2Nat(n-1))
   
-  def sum_lemma(): Boolean = {
-    3 == nat2Int(plus(int2Nat(1), int2Nat(2)))
+  @lemma
+  @depend()
+  def assoc_plus_lemma(a: Nat, b: Nat, c: Nat): Boolean = {
+    plus(a, plus(b, c)) == plus(plus(a, b), c)
   } holds
+  
+  def isOdd(n: Nat): Boolean = n match {
+    case Zero()      => false
+    case Succ(n1)   => ! isOdd(n1)
+  }
+
+  def three_odd_lemma() = {isOdd(int2Nat(9)) } holds
 }
