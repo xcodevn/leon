@@ -22,6 +22,7 @@ import termination._
 
 import scala.collection.mutable.{Map => MutableMap}
 import scala.collection.mutable.{Set => MutableSet}
+import scala.collection.mutable.MutableList
 
 import leon.solvers.lemmafilter._
 
@@ -79,6 +80,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
     "MODEL" -> true,
     "TRACE" -> true,
     "TRACE_FILE_NAME" -> "\"hi.txt\"",
+    "MACRO_FINDER" -> true,
     "MBQI" -> false,                
     "TYPE_CHECK" -> true,
     "WELL_SORTED_CHECK" -> true
@@ -437,6 +439,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
       /* Only use filter in the first time of calling this function */
       if(useLemmas && ! addLemmaYet) {
         addLemmaYet = true
+        lemmaZ3ASTs.clear()
         filterName match {
           case "MaSh" =>
             val MaShfilter = new MaShFilter(context, program)
@@ -517,9 +520,9 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
        * So I use a trick to workaround this by pre-unrolling enough times for some special example, so I can focus on the
        * main error of Leon
        */
-      val times_of_preunrolling: Int = 4
+      val times_of_preunrolling: Int = 0
       var count = 0
-      reporter.debug("Pre-unrolling " + times_of_preunrolling + " times")
+      println("Pre-unrolling " + times_of_preunrolling + " times")
       while (count < times_of_preunrolling) {
               val toRelease = unrollingBank.getZ3BlockersToUnlock
               // println("Release " + toRelease.toString)
@@ -558,12 +561,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
           case None =>
             // reporter.warning("Z3 doesn't know because: " + z3.getSearchFailure.message)
             reporter.warning("Z3 doesn't know because ??")
-            val z3model = solver.getModel
-
-            val (isValid, model) = validateModel(z3model, entireFormula, varsInVC, silenceErrors = false)
-
-            if (isValid) foundAnswer(Some(true), model)
-            else foundAnswer(None)
+            foundAnswer(None)
 
           case Some(true) => // SAT
             // reporter.info("SAT")
@@ -657,10 +655,15 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
                 } catch { case _ => }
               }
 
-
-              solver.push() // FIXME: remove when z3 bug is fixed
-              val res2 = solver.checkAssumptions(assumptionsAsZ3 : _*)
-              solver.pop()  // FIXME: remove when z3 bug is fixed
+              /* We only use lemma when checking UNSAT */
+              solver.push()
+                for (axiom <- lemmaZ3ASTs) {
+                  solver.assertCnstr(axiom)
+                }
+                solver.push() // FIXME: remove when z3 bug is fixed
+                  val res2 = solver.checkAssumptions(assumptionsAsZ3 : _*)
+                solver.pop()  // FIXME: remove when z3 bug is fixed
+              solver.pop()  // restore non using lemma state
 
               val adjustedForUnknowns = if(false || !useLemmas) res2 else res2 match {
                 case Some(false) => Some(false)
@@ -684,19 +687,14 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
                   }
 
                 case None =>
-                  reporter.warning("Unknown w/o blockers.")
-                  val (isValid, model) = validateModel(solver.getModel, entireFormula, varsInVC, silenceErrors = false)
-
-                  if (isValid) foundAnswer(Some(true), model)
-                  else {
-                    if(false) {
-                      reporter.warning("(Forced stop)")
-                    } else {
-                      // reporter.warning("Z3 says [%s]".format(solver.getReasonUnknown))
-                    }
-                    foundAnswer(None)
+                reporter.warning("Unknown w/o blockers.")
+                  if(false) {
+                    reporter.warning("(Forced stop)")
+                  } else {
+                    // reporter.warning("Z3 says [%s]".format(solver.getReasonUnknown))
                   }
-              }
+                  foundAnswer(None)
+                }
             }
 
             if(interrupted) {

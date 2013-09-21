@@ -2,6 +2,7 @@ package leon
 package solvers.z3
 
 import z3.scala._
+import scala.collection.mutable.MutableList
 
 import purescala.Trees._
 import purescala.TreeOps._
@@ -42,6 +43,8 @@ trait Z3Lemmas {
   self : AbstractZ3Solver =>
 
   private lazy val lemmaPost = FreshIdentifier("res").setType(BooleanType)
+
+  val lemmaZ3ASTs: MutableList[Z3AST] = new MutableList[Z3AST]()
 
   def prepareLemmas(solver: Z3Solver, funDefs: Seq[FunDef]): Unit = {
     for (funDef <- funDefs) {
@@ -100,7 +103,9 @@ trait Z3Lemmas {
 
             // reporter.info("Look ! I made an axiom !")
             // reporter.info(axiom.toString)
-            solver.assertCnstr(axiom)
+
+            lemmaZ3ASTs += axiom // re-use latter
+            // solver.assertCnstr(axiom)
           } else {
             val axiom: Z3AST = z3.mkForAll(0, Seq(), namedBounds, quantBody)
 
