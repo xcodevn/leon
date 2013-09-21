@@ -99,7 +99,7 @@ trait Z3Lemmas {
 
             val z3MultiPatterns = z3.mkPattern(lst.toSeq.flatten: _*)
 
-            val axiom: Z3AST = z3.mkForAll(0, Seq(z3MultiPatterns), namedBounds, quantBody)
+            val axiom: Z3AST = z3.mkForAll(11, Seq(z3MultiPatterns), namedBounds, quantBody)
 
             // reporter.info("Look ! I made an axiom !")
             // reporter.info(axiom.toString)
@@ -107,7 +107,7 @@ trait Z3Lemmas {
             lemmaZ3ASTs += axiom // re-use latter
             // solver.assertCnstr(axiom)
           } else {
-            val axiom: Z3AST = z3.mkForAll(0, Seq(), namedBounds, quantBody)
+            val axiom: Z3AST = z3.mkForAll(11, Seq(), namedBounds, quantBody)
 
             // reporter.info("Look ! I made an axiom !")
             // reporter.info(axiom.toString)

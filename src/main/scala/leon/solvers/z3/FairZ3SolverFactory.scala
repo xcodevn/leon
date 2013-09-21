@@ -80,7 +80,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
     "MODEL" -> true,
     "TRACE" -> true,
     "TRACE_FILE_NAME" -> "\"hi.txt\"",
-    "MACRO_FINDER" -> true,
+    "MACRO_FINDER" -> false,
     "MBQI" -> false,                
     "TYPE_CHECK" -> true,
     "WELL_SORTED_CHECK" -> true
@@ -642,6 +642,18 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
                 reporter.debug(" - Running search without blocked literals (w/o lucky test)")
               }
 
+              /* We only use lemma when checking UNSAT */
+              solver.push()
+                println(lemmaZ3ASTs.mkString("(assert ", ")\n(assert ", ")\n"))
+                for (axiom <- lemmaZ3ASTs) {
+                  solver.assertCnstr(axiom)
+                }
+                solver.push() // FIXME: remove when z3 bug is fixed
+                  val res2 = solver.checkAssumptions(assumptionsAsZ3 : _*)
+                solver.pop()  // FIXME: remove when z3 bug is fixed
+              solver.pop()  // restore non using lemma state
+
+              /*
               val qua = solver.getQuantifierInstances
               for (i <- qua) {
                 try {
@@ -654,16 +666,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
                 }
                 } catch { case _ => }
               }
-
-              /* We only use lemma when checking UNSAT */
-              solver.push()
-                for (axiom <- lemmaZ3ASTs) {
-                  solver.assertCnstr(axiom)
-                }
-                solver.push() // FIXME: remove when z3 bug is fixed
-                  val res2 = solver.checkAssumptions(assumptionsAsZ3 : _*)
-                solver.pop()  // FIXME: remove when z3 bug is fixed
-              solver.pop()  // restore non using lemma state
+              */
 
               val adjustedForUnknowns = if(false || !useLemmas) res2 else res2 match {
                 case Some(false) => Some(false)
