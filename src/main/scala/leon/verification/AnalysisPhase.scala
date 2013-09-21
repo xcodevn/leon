@@ -145,7 +145,7 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
         )
     }
     val opt = ctx.options.foldLeft ( List[String]() ) ( ( lst, op) => {
-      val s = Set[String]("filter", "training", "timeout")
+      val s = Set[String]("filter", "training", "timeout", "num-lemmas", "functions")
       op match {
         case LeonFlagOption(key, va) => if (s.contains(key)) "%s:%s".format(key, va.toString) :: lst else lst
 

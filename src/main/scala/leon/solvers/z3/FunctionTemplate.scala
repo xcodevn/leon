@@ -30,7 +30,7 @@ class FunctionTemplate private(
   private val isTerminatingForAllInputs : Boolean = (
        isRealFunDef
     && !funDef.hasPrecondition
-    && solver.getTerminator.terminates(funDef).isGuaranteed
+    // && solver.getTerminator.terminates(funDef).isGuaranteed
   )
 
   // if(isRealFunDef) {
