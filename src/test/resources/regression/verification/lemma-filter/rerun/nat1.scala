@@ -131,4 +131,5 @@ object Nat {
                                       isEven(plus(n10,n20))
     }
   } ensuring {res => res && isEven(plus(n1, n2))}
+
 }

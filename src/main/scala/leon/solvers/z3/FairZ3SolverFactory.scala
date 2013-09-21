@@ -22,6 +22,7 @@ import termination._
 
 import scala.collection.mutable.{Map => MutableMap}
 import scala.collection.mutable.{Set => MutableSet}
+import scala.collection.mutable.MutableList
 
 import leon.solvers.lemmafilter._
 
@@ -77,6 +78,9 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
   // This is fixed.
   protected[leon] val z3cfg = new Z3Config(
     "MODEL" -> true,
+    "TRACE" -> true,
+    "TRACE_FILE_NAME" -> "\"hi.txt\"",
+    "MACRO_FINDER" -> false,
     "MBQI" -> false,                
     "TYPE_CHECK" -> true,
     "WELL_SORTED_CHECK" -> true
@@ -232,6 +236,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
 
     def getZ3BlockersToUnlock: Seq[Z3AST] = {
       if (!blockersInfo.isEmpty) {
+        // println("Blocker values: " + blockersInfo.map( r => (r._1, r._2._1) ))
         val minGeneration = blockersInfo.values.map(_._1).min
 
         blockersInfo.filter(_._2._1 == minGeneration).toSeq.map(_._1)
@@ -435,6 +440,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
       /* Only use filter in the first time of calling this function */
       if(useLemmas && ! addLemmaYet) {
         addLemmaYet = true
+        lemmaZ3ASTs.clear()
         filterName match {
           case "MaSh" =>
             val MaShfilter = new MaShFilter(context, program)
@@ -469,11 +475,13 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
         }
       }
 
+      //println(variablesOf(expression))
       varsInVC ++= variablesOf(expression)
 
       frameExpressions = (expression :: frameExpressions.head) :: frameExpressions.tail
 
       val newClauses = unrollingBank.scanForNewTemplates(expression)
+      //println("New clauses " + newClauses.toString)
 
       for (cl <- newClauses) {
         solver.assertCnstr(cl)
@@ -522,8 +530,9 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
       reporter.debug("Pre-unrolling " + times_of_preunrolling + " times")
       while (count < times_of_preunrolling) {
               val toRelease = unrollingBank.getZ3BlockersToUnlock
+              // println("Release " + toRelease.toString)
 
-              for(id <- toRelease) {
+              for(id <- toRelease.sortWith(_.toString < _.toString)) {
                 val newClauses = unrollingBank.unlock(id)
 
                 for(ncl <- newClauses) {
@@ -539,16 +548,18 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
         //val blockingSetAsZ3 : Seq[Z3AST] = blockingSet.toSeq.map(toZ3Formula(_).get)
         // println("Blocking set : " + blockingSet)
 
+        //println(solver.getAssertions.toSeq.mkString("(assert ", ")\n(assert ", ")\n"))
+        //println(unrollingBank.z3CurrentZ3Blockers.mkString("(assert ",")\n(assert ",")\n"))
         reporter.debug(" - Running Z3 search...")
 
-        // reporter.debug("Searching in:\n"+solver.getAssertions.toSeq.mkString("\nAND\n"))
-        // reporter.debug("Unroll.  Assumptions:\n"+unrollingBank.z3CurrentZ3Blockers.mkString("  &&  "))
-        // reporter.debug("Userland Assumptions:\n"+assumptionsAsZ3.mkString("  &&  "))
+        reporter.debug("Searching in:\n"+solver.getAssertions.toSeq.mkString("(assert ", ")\n(assert ", ")\n"))
+        reporter.debug("Unroll.  Assumptions:\n"+unrollingBank.z3CurrentZ3Blockers.mkString("(assert ",")\n(assert ",")\n"))
+        reporter.debug("Userland Assumptions:\n"+assumptionsAsZ3.mkString("(assert ",")\n(assert ",")\n"))
 
-        solver.push() // FIXME: remove when z3 bug is fixed
+
+        solver.push()
         val res = solver.checkAssumptions((assumptionsAsZ3 ++ unrollingBank.z3CurrentZ3Blockers) :_*)
-        solver.pop()  // FIXME: remove when z3 bug is fixed
-
+        solver.pop()
         reporter.debug(" - Finished search with blocked literals")
 
         res match {
@@ -566,6 +577,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
             else foundAnswer(None)
 
           case Some(true) => // SAT
+            // reporter.info("SAT")
 
             reporter.debug("SAT")
 
@@ -643,9 +655,31 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
                 reporter.debug(" - Running search without blocked literals (w/o lucky test)")
               }
 
-              solver.push() // FIXME: remove when z3 bug is fixed
-              val res2 = solver.checkAssumptions(assumptionsAsZ3 : _*)
-              solver.pop()  // FIXME: remove when z3 bug is fixed
+              /* We only use lemma when checking UNSAT */
+              solver.push()
+                // println(lemmaZ3ASTs.mkString("(assert ", ")\n(assert ", ")\n"))
+                for (axiom <- lemmaZ3ASTs) {
+                  solver.assertCnstr(axiom)
+                }
+                solver.push() // FIXME: remove when z3 bug is fixed
+                  val res2 = solver.checkAssumptions(assumptionsAsZ3 : _*)
+                solver.pop()  // FIXME: remove when z3 bug is fixed
+              solver.pop()  // restore non using lemma state
+
+              /*
+              val qua = solver.getQuantifierInstances
+              for (i <- qua) {
+                try {
+                  val ex = fromZ3Formula(null, i)
+                def isGround(ex: Expr): Boolean = variablesOf(ex).size > 0
+                if (isGround(ex)) {
+                  println("Our instance")
+                  println(i)
+                  assertCnstr(ex)
+                }
+                } catch { case _ => }
+              }
+              */
 
               val adjustedForUnknowns = if(false || !useLemmas) res2 else res2 match {
                 case Some(false) => Some(false)
@@ -655,10 +689,10 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
 
               adjustedForUnknowns match {
                 case Some(false) =>
-                  //reporter.debug("UNSAT WITHOUT Blockers")
+                  // println("UNSAT WITHOUT Blockers")
                   foundAnswer(Some(false), core = z3CoreToCore(solver.getUnsatCore))
                 case Some(true) =>
-                  //reporter.debug("SAT WITHOUT Blockers")
+                  // println("SAT WITHOUT Blockers")
                   if (this.feelingLucky && !interrupted) {
                     // we might have been lucky :D
                     val (wereWeLucky, cleanModel) = validateModel(solver.getModel, entireFormula, varsInVC, silenceErrors = true)
@@ -669,14 +703,14 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
                   }
 
                 case None =>
-                  reporter.warning("Unknown w/o blockers.")
+                reporter.warning("Unknown w/o blockers.")
                   if(false) {
                     reporter.warning("(Forced stop)")
                   } else {
                     // reporter.warning("Z3 says [%s]".format(solver.getReasonUnknown))
                   }
                   foundAnswer(None)
-              }
+                }
             }
 
             if(interrupted) {
@@ -684,6 +718,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
             }
 
             if(!foundDefinitiveAnswer) { 
+
               reporter.debug("- We need to keep going.")
 
               val toRelease = unrollingBank.getZ3BlockersToUnlock
