@@ -56,6 +56,9 @@ object Reverse {
     }
   } ensuring {res => res && rev(rev(l)) == l}
 
+  @induct
+  def rev_rev_lemma4(l: List): Boolean = { rev(rev(l)) == l } holds
+
   def rev_rev_lemma2(l: List):Boolean = {
     l match {
       case Nil() => rev(rev(l)) == l
@@ -65,7 +68,7 @@ object Reverse {
     }
   } holds
 
-  def rev_rev_lemma3(x: Int, xs: List): Boolean =  { 
+  def rev_rev_lemma3(xs: List, x: Int): Boolean =  { 
     rev(rev(Cons(x, xs))) == Cons(x, xs)
   } holds
 }

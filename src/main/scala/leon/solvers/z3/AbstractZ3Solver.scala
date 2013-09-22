@@ -797,8 +797,8 @@ trait AbstractZ3Solver extends SolverFactory[Solver] {
     val idd = z3.mkFreshConst(id.uniqueName, typeToSort(id.getType))
     println("(declare-const %s %s)".format(idd.toString, typeToSort(id.getType).toString))
     val newid = FreshIdentifier(idd.toString).setType(id.getType)
-    z3IdToExpr += (idd -> Variable(newid))
-    exprToZ3Id += (Variable(newid) ->idd)
+    // z3IdToExpr += (idd -> Variable(newid))
+    //exprToZ3Id += (Variable(newid) ->idd)
 
     idd
   }
