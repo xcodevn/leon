@@ -81,6 +81,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
     "TRACE" -> true,
     "TRACE_FILE_NAME" -> "\"hi.txt\"",
     "MACRO_FINDER" -> false,
+    // "SOFT_TIMEOUT" -> 2000,                
     "MBQI" -> false,                
     "TYPE_CHECK" -> true,
     "WELL_SORTED_CHECK" -> true
@@ -525,7 +526,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
        * So I use a trick to workaround this by pre-unrolling enough times for some special example, so I can focus on the
        * main error of Leon
        */
-      val times_of_preunrolling: Int = 0
+      val times_of_preunrolling: Int = 1
       var count = 0
       println("Pre-unrolling " + times_of_preunrolling + " times")
       while (count < times_of_preunrolling) {
@@ -542,6 +543,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
               count = count + 1
       }
 
+      var flag = true
       // z3.setAstPrintMode(Z3Context.AstPrintMode.Z3_PRINT_SMTLIB2_COMPLIANT)
       while(!foundDefinitiveAnswer && !interrupted) {
 
@@ -571,10 +573,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
              * In some cases Z3 returns unknown but also having a `suggested model`
              * Anw, we're lucky sometimes ;-)
              */
-            val (isValid, model) = validateModel(solver.getModel, entireFormula, varsInVC, silenceErrors = false)
-
-            if (isValid) foundAnswer(Some(true), model)
-            else foundAnswer(None)
+            foundAnswer(None)
 
           case Some(true) => // SAT
             // reporter.info("SAT")
@@ -666,7 +665,6 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
                 solver.pop()  // FIXME: remove when z3 bug is fixed
               solver.pop()  // restore non using lemma state
 
-              /*
               val qua = solver.getQuantifierInstances
               for (i <- qua) {
                 try {
@@ -675,12 +673,12 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
                 if (isGround(ex)) {
                   println("Our instance")
                   println(i)
-                  assertCnstr(ex)
+                  if (flag) { assertCnstr(ex); flag = false}
                 }
                 } catch { case _ => }
               }
-              */
 
+             println("Real return result: " + res2.toString)
               val adjustedForUnknowns = if(false || !useLemmas) res2 else res2 match {
                 case Some(false) => Some(false)
                 case Some(true)  => Some(true) // not likely to happen, ever.
@@ -701,6 +699,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
                       foundAnswer(Some(true), cleanModel)
                     }
                   }
+                  // foundAnswer(None)
 
                 case None =>
                 reporter.warning("Unknown w/o blockers.")

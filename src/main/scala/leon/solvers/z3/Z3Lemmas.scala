@@ -92,14 +92,15 @@ trait Z3Lemmas {
               // reporter.info("--- ")
               // reporter.info("--- " + mp.mkString("[", "; ", "]"))
 
-              mp.toSeq.map(c => toZ3Formula(c, initialMap).get)
+              z3.mkPattern( mp.toSeq.map(c => toZ3Formula(c, initialMap).get) : _*) 
+              // mp.toSeq.map(c => z3.mkPattern(toZ3Formula(c, initialMap).get))
             }
 
             // reporter.info(lst.toSeq)
 
-            val z3MultiPatterns = z3.mkPattern(lst.toSeq.flatten: _*)
+            // val z3MultiPatterns = z3.mkPattern(lst.toSeq.flatten: _*)
 
-            val axiom: Z3AST = z3.mkForAll(11, Seq(z3MultiPatterns), namedBounds, quantBody)
+            val axiom: Z3AST = z3.mkForAll(11, lst.toSeq, namedBounds, quantBody)
 
             // reporter.info("Look ! I made an axiom !")
             // reporter.info(axiom.toString)

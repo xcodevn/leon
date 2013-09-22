@@ -49,7 +49,8 @@ object Reverse {
   def rev_rev_lemma1(l: List):Boolean = {
     l match {
       case Nil() => true
-      case Cons(x, xs) => rev_rev_lemma(xs) && rev(rev(Cons(x,xs))) == l
+      case Cons(x, xs) =>  rev_rev_lemma(xs)
+                          // rev(rev(l)) == l
                           // rev(app(rev(xs), Cons(x, Nil()))) == app(rev(Cons(x, Nil())), rev(rev(xs)))
                           // l == app(rev(Cons(x, Nil())), rev(rev(xs)))
     }
