@@ -550,9 +550,11 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
         //val blockingSetAsZ3 : Seq[Z3AST] = blockingSet.toSeq.map(toZ3Formula(_).get)
         // println("Blocking set : " + blockingSet)
 
-        println(solver.getAssertions.toSeq.mkString("(assert ", ")\n(assert ", ")\n"))
-        println(unrollingBank.z3CurrentZ3Blockers.mkString("(assert ",")\n(assert ",")\n"))
-        reporter.debug(" - Running Z3 search...")
+        if (useLemmas) {
+          println(solver.getAssertions.toSeq.mkString("(assert ", ")\n(assert ", ")\n"))
+          println(unrollingBank.z3CurrentZ3Blockers.mkString("(assert ",")\n(assert ",")\n"))
+          reporter.debug(" - Running Z3 search...")
+        }
 
         reporter.debug("Searching in:\n"+solver.getAssertions.toSeq.mkString("(assert ", ")\n(assert ", ")\n"))
         reporter.debug("Unroll.  Assumptions:\n"+unrollingBank.z3CurrentZ3Blockers.mkString("(assert ",")\n(assert ",")\n"))
