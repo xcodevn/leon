@@ -26,8 +26,8 @@ object Nat {
   def isEqual(a: Nat, b: Nat): Boolean = a == b
   
   def sum_lemma(): Boolean = {
-    // 7 == nat2Int(plus(int2Nat(3), int2Nat(4)))
-    Succ(Succ(Succ(Succ(Succ(Succ(Succ(Zero()))))))) == plus( Succ(Succ(Succ(Zero()))), Succ(Succ(Succ(Succ(Zero())))))
+    7 == nat2Int(plus(int2Nat(3), int2Nat(4)))
+    //Succ(Succ(Succ(Succ(Succ(Succ(Succ(Zero()))))))) == plus( Succ(Succ(Succ(Zero()))), Succ(Succ(Succ(Succ(Zero())))))
   } holds
 
 

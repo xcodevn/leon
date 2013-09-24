@@ -1,0 +1,186 @@
+// A lemma filter for provers
+
+package leon
+package solvers
+package rewriter
+
+import purescala.Common._
+import purescala.Definitions._
+import purescala.TreeOps._
+import purescala.TypeTrees._
+import purescala.Trees._
+import purescala.Extractors._
+import collection.mutable.MutableList
+
+abstract class SIMPRESULT
+case class SIMP_SUCCESS() extends SIMPRESULT
+case class SIMP_SAME()    extends SIMPRESULT
+case class SIMP_FAIL(msg: String) extends SIMPRESULT
+
+// FIXME: lhs: should be a PATTERN
+case class RewriteRule (conds: Seq[Expr], lhs: Expr, rhs: Expr)
+
+//
+// This class is built base on Solver.scala
+// We need a stable API for Rewriters
+//
+abstract class Rewriter {
+  // This function will return a subset of lemmas which are really necessary for proof of `conjecture`
+
+  def createPattern(lhs: Expr, rhs: Expr) = {
+    // FIXME: do it later please 
+
+  }
+
+  def instantiate(expr: Expr, m: Map[Identifier, Expr]): Expr = expr match {
+    case Variable(id) if m.contains(id) => m(id)
+    case UnaryOperator(t, recons) => {
+      recons(instantiate(t, m))
+    }
+
+    case BinaryOperator(t, y, recons) => {
+      recons(instantiate(t, m), instantiate(y, m))
+    }
+
+    case n @ NAryOperator(args, recons) => {
+      recons(args.map(ag => instantiate(ag, m)))
+    }
+
+    case t @ _ => t
+
+  }
+  protected val rules : MutableList[RewriteRule] = new MutableList[RewriteRule]
+  def resetRules = rules.clear
+  def addRewriteRule(rule: RewriteRule) = {
+    rules += rule
+  }
+
+  def simplify(sf: SolverFactory[Solver])(expr: Expr, proofContext: Seq[Expr]): (Expr, SIMPRESULT)
+}
+
+object TrivialRewriter1 extends Rewriter {
+  def simplify(sf: SolverFactory[Solver])(expr: Expr, proofContext: Seq[Expr]): (Expr, SIMPRESULT) = {
+    (Error("Not implemented yet!"), SIMP_FAIL("unknown reason"))
+  }
+}
+
+object TrivialRewriter2 extends Rewriter {
+  def simplify(sf: SolverFactory[Solver])(expr: Expr, proofContext: Seq[Expr]): (Expr, SIMPRESULT) = {
+    (expr, SIMP_SUCCESS())
+  }
+}
+object SimpleRewriter extends Rewriter {
+  def exprMatch(pattern: Expr, ex: Expr): (Boolean, Map[Identifier,Expr]) = {
+
+    if (pattern.getType == ex.getType || pattern.getType == Untyped) {
+      if (pattern.getClass != ex.getClass) {
+        pattern match {
+          case Variable(id) => (true, Map(id -> ex) )
+          case _            => (false, Map())
+        }
+      } else {
+
+        def checkChilds(args: Seq[Expr], args1: Seq[Expr]): (Boolean, Map[Identifier, Expr]) = {
+          val rl = for ((e1, e2) <- (args zip args1)) yield exprMatch(e1,e2)
+          (rl.map(_._1).foldLeft(true)((cur, va) => cur && va), 
+            rl.map(_._2).foldLeft(Map[Identifier,Expr]())((cur, va) => cur ++ va))
+        }
+
+        pattern match {
+          case FunctionInvocation(fd, args) => {
+            val FunctionInvocation(fd1, args1) = ex
+            if (fd == fd1) {
+              checkChilds(args, args1)
+            } else (false, Map())
+          }
+
+          case UnaryOperator(t, recons) => {
+            val UnaryOperator(t1,recons1) = ex
+            exprMatch(t,t1)
+          }
+          case BinaryOperator(t, y, recons) => {
+            val BinaryOperator(t1, y1, recons1) = ex
+            val (r1, m1) = exprMatch(t,t1)
+            if (r1) {
+              val (r2, m2) = exprMatch(y,y1)
+              (r1 && r2, m1 ++ m2)
+            } else (false, Map())
+          }
+          case n @ NAryOperator(args, recons) => {
+            val NAryOperator(args1, recons1) = ex
+            if (args.size == args1.size) {
+              checkChilds(args, args1)
+            } else (false, Map())
+          }
+
+          case Variable(id) => {
+            val Variable(id1) = ex
+            (true, Map (id -> ex))
+          }
+
+          case _ => (pattern == ex, Map())
+        }
+      }
+    } else (false, Map())
+  }
+
+
+  def simplify(sf: SolverFactory[Solver])(old_expr: Expr, proofContext: Seq[Expr]): (Expr, SIMPRESULT) = {
+    println("Simplify: " + old_expr.toString)
+    val expr = old_expr match {
+      case UnaryOperator(t, recons) => {
+        val (ex, rl) = simplify(sf)(t, proofContext)
+        recons(ex)
+      }
+
+      case BinaryOperator(t, y, recons) => {
+        val (ex1, rl1) = simplify(sf)(t, proofContext)
+        val (ex2, rl2) = simplify(sf)(y, proofContext)
+        recons(ex1, ex2)
+      }
+
+      case n @ NAryOperator(args, recons) => {
+        recons(args.map ( ar => { val (ex, rl) = simplify(sf)(ar, proofContext); ex } ))
+      }
+
+      case _ => return (old_expr, SIMP_SUCCESS())
+    }
+    val solver = SimpleSolverAPI(sf)
+    for (RewriteRule(cond, lhs, rhs) <- rules) {
+      val varsInLHS = variablesOf(lhs)
+      val (isMatched, m) = exprMatch(lhs, expr)
+      if (isMatched) {
+        println ("Matched " + lhs + " with " + expr + " \n Map is " + m)
+        def isSubSimplify(expr: Expr): Boolean = expr match {
+          case Equals(_, v @ Variable(id)) if !varsInLHS.contains(id) => true
+          case Implies(_, Equals(_, v @ Variable(id))) if !varsInLHS.contains(id) => true
+          case _ => false
+        }
+
+        def toRewriteRule(expr: Expr): RewriteRule = expr match {
+          case Equals(lhs, rhs @ Variable(id)) if !varsInLHS.contains(id) => RewriteRule(Seq(), lhs, rhs)
+          case Implies(And(conds), Equals(lhs, rhs @ Variable(id))) if !varsInLHS.contains(id) => RewriteRule(conds, lhs, rhs)
+          case _ => throw new Throwable("We don't want this case!")
+        }
+
+
+        val realConds = cond.filter(!isSubSimplify(_)).map(cond => instantiate(cond, m))
+        solver.solveVALID(And(realConds ++ proofContext)) match {
+          case Some(true)  =>
+            val newM = m ++ cond.filter(isSubSimplify(_)).foldLeft (Map[Identifier,Expr]()) ( (curVal, cond) =>{
+              val RewriteRule(conds1, lhs1, rhs1) = toRewriteRule(cond)
+              val new_lhs1 = instantiate(lhs1, m)
+              val (s_lhs1, rl) = simplify(sf)(new_lhs1, conds1 ++ proofContext)
+              val Variable(id) = rhs1
+              curVal + (id -> s_lhs1)
+            })
+            val new_rhs = instantiate(rhs, newM)
+            return (new_rhs, SIMP_SUCCESS())
+          case _ => 
+        }
+      }
+    }
+
+    (expr, SIMP_SUCCESS())
+  }
+}

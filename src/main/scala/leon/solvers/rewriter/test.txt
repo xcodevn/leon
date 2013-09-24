@@ -1,0 +1,19 @@
+import leon.purescala.Common._
+import leon.purescala.Definitions._
+import leon.purescala.TreeOps._
+import leon.purescala.TypeTrees._
+import leon.purescala.Trees._
+import leon.purescala.Extractors._
+import collection.mutable.MutableList
+
+import leon.solvers.rewriter._
+
+object Test {
+  val e1 = IfExpr(Variable(FreshIdentifier("cond")), Error("ex1"), Error("ex2"))
+  val e2 = IfExpr(Error("cond"), Error("ex1"), Error("ex2"))
+  def run= {
+    SimpleRewriter.addRewriteRule(RewriteRule(Seq(e1), e1,e2))
+
+    SimpleRewriter.simplify(())(e2, Seq())
+  }
+}

@@ -15,6 +15,7 @@ import solvers.z3._
 import scala.collection.mutable.{Set => MutableSet}
 
 import leon.solvers.lemmafilter._
+import leon.solvers.rewriter._
 
 import java.io._
 
@@ -65,11 +66,23 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
     allVCs
   }
 
-  def checkVerificationConditions(vctx: VerificationContext, vcs: Map[FunDef, List[VerificationCondition]]) : VerificationReport = {
+  def checkVerificationConditions(vctx: VerificationContext, vcs: Map[FunDef, List[VerificationCondition]], rwSolver: SolverFactory[Solver]) : VerificationReport = {
     val reporter = vctx.reporter
     val solvers  = vctx.solvers
 
     val interruptManager = vctx.context.interruptManager
+
+
+    /* Just for testing */
+   val p = Variable(FreshIdentifier("cond")).setType(BooleanType)
+   val e1= Variable(FreshIdentifier("cond"))
+   val e2= Variable(FreshIdentifier("cond"))
+   val iteExpr = IfExpr(p, e1, e2)
+   val truee = BooleanLiteral(true)
+   val cond = Equals(p, truee)
+
+    SimpleRewriter.addRewriteRule(RewriteRule(Seq(cond), iteExpr, e1))
+    SimpleRewriter.addRewriteRule(RewriteRule(Seq(Not(cond)), iteExpr, e2))
 
     for((funDef, vcs) <- vcs.toSeq.sortWith((a,b) => a._1 < b._1); vcInfo <- vcs if !interruptManager.isInterrupted()) {
       val funDef = vcInfo.funDef
@@ -79,6 +92,20 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
       reporter.info("Now considering '" + vcInfo.kind + "' VC for " + funDef.id + "...")
       reporter.debug("Verification condition (" + vcInfo.kind + ") for ==== " + funDef.id + " ====")
       reporter.debug(simplifyLets(vc))
+      val svc = simplifyLets(vc)
+
+      val out = SimpleRewriter.simplify(rwSolver)(svc, Seq())
+      println("Our output \n============\n"  + out._1 + "\n=============\n")
+      val out1 = SimpleRewriter.simplify(rwSolver)(out._1, Seq())
+      println("Our output \n============\n"  + simplifyLets(out1._1) + "\n=============\n")
+      val out2 = SimpleRewriter.simplify(rwSolver)(out1._1, Seq())
+      println("Our output \n============\n"  + simplifyLets(out2._1) + "\n=============\n")
+      val out3 = SimpleRewriter.simplify(rwSolver)(out2._1, Seq())
+      println("Our output \n============\n"  + simplifyLets(out3._1) + "\n=============\n")
+      val out4 = SimpleRewriter.simplify(rwSolver)(out3._1, Seq())
+      println("Our output \n============\n"  + simplifyLets(out4._1) + "\n=============\n")
+      vcs
+      /*
 
       // try all solvers until one returns a meaningful answer
       solvers.find(se => {
@@ -127,6 +154,7 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
         }
         case _ =>
       }
+      */
     }
 
     val report = new VerificationReport(vcs)
@@ -188,6 +216,17 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
     val reporter = ctx.reporter
 
     val fairZ3 = new FairZ3SolverFactory(ctx, program)
+    val rwSolver = new FairZ3SolverFactory(ctx, program)
+    for(funDef <- program.definedFunctions.toList.sortWith((fd1, fd2) => fd1 < fd2)) {
+      println(funDef.id)
+      if (funDef.body.isDefined) {
+        val Some(imp) = funDef.body
+        println(imp)
+        println(funDef.args)
+        val lstArgs = funDef.args.map(arg => { val VarDecl(v, ty) = arg; Variable(v).setType(ty) }).toSeq
+        SimpleRewriter.addRewriteRule(RewriteRule(Seq(), FunctionInvocation(funDef, lstArgs), imp))
+      }
+    }
 
     if (doTraining) {
       reporter.info("Training MaSh Filter from user guide...")
@@ -211,7 +250,7 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
     val report = if(solvers.size >= 1) {
       reporter.debug("Running verification condition generation...")
       val vcs = generateVerificationConditions(reporter, program, functionsToAnalyse)
-      checkVerificationConditions(vctx, vcs)
+      checkVerificationConditions(vctx, vcs, rwSolver)
     } else {
       reporter.warning("No solver specified. Cannot test verification conditions.")
       VerificationReport.emptyReport
