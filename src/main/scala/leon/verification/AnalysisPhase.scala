@@ -72,25 +72,6 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
 
     val interruptManager = vctx.context.interruptManager
 
-
-    /* Just for testing */
-   val p = Variable(FreshIdentifier("cond")).setType(BooleanType)
-   val e1= Variable(FreshIdentifier("e1"))
-   val e2= Variable(FreshIdentifier("e2"))
-   val rve1= Variable(FreshIdentifier("rve1"))
-   val rve2= Variable(FreshIdentifier("rve2"))
-   val iteExpr = IfExpr(p, e1, e2)
-   val truee = BooleanLiteral(true)
-   val falsee = BooleanLiteral(false)
-   val cond = Equals(p, truee)
-
-    SimpleRewriter.addRewriteRule(RewriteRule("If_P", Seq(cond), iteExpr, e1))
-    SimpleRewriter.addRewriteRule(RewriteRule("If_Not_P", Seq(Not(cond)), iteExpr, e2))
-    SimpleRewriter.addRewriteRule(RewriteRule("Equal_True", Seq(Equals(e1, e2)), Equals(e1,e2), truee))
-    SimpleRewriter.addRewriteRule(RewriteRule("Equal_False", Seq(Not(Equals(e1, e2))), Equals(e1,e2), falsee))
-    SimpleRewriter.addRewriteRule(RewriteRule("Imply_Local_Assumtion", Seq(Equals(e1, rve1), Implies(e1,Equals(e2, rve2))), Implies(e1,e2),
-      Implies(e1, rve2)))
-
     for((funDef, vcs) <- vcs.toSeq.sortWith((a,b) => a._1 < b._1); vcInfo <- vcs if !interruptManager.isInterrupted()) {
       val funDef = vcInfo.funDef
       funDef.isReach = true
@@ -103,8 +84,8 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
 
       def rec_simp(ex: Expr): Expr = {
         val out = SimpleRewriter.simplify(rwSolver)(ex, Seq())
-        out._1
-        // if (out._1 != ex) rec_simp(out._1) else ex
+        return out._1
+        if (out._1 != ex) rec_simp(out._1) else ex
       }
 
       println("Simplify: \n" + svc + "\n======")
@@ -219,19 +200,22 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
     val reporter = ctx.reporter
 
     val fairZ3 = new FairZ3SolverFactory(ctx, program)
-    val ctx_wo_filter = LeonContext(ctx.reporter, ctx.interruptManager, ctx.settings, Seq(), Seq(), ctx.timers)
-    val rwSolver = new FairZ3SolverFactory(ctx_wo_filter, program)
-    for(funDef <- program.definedFunctions.toList.sortWith((fd1, fd2) => fd1 < fd2)) {
-      // println(funDef.id)
-      if (funDef.body.isDefined) {
-        val Some(imp) = funDef.body
-        println(imp)
-        // println(funDef.args)
-        val lstArgs = funDef.args.map(arg => { val VarDecl(v, ty) = arg; Variable(v).setType(ty) }).toSeq
-        SimpleRewriter.addRewriteRule(RewriteRule(funDef.id.toString + "_simp",Seq(), FunctionInvocation(funDef, lstArgs),
-          matchToIfThenElse(imp)))
-      }
+
+    class SilentReporter extends DefaultReporter(Settings()) {
+      override def output(msg: String) : Unit = { }
     }
+
+    val ctx_wo_filter = LeonContext(new SilentReporter, ctx.interruptManager, ctx.settings, Seq(), Seq(), ctx.timers)
+    val rwSolver = new FairZ3SolverFactory(ctx_wo_filter, program)
+
+    for(funDef <- program.definedFunctions.toList.sortWith((fd1, fd2) => fd1 < fd2)) {
+      println(funDef.id)
+      val rus = Rules.createFunctionRewriteRules(funDef, program)
+      for (ru <- rus) SimpleRewriter.addRewriteRule(ru)
+    }
+    Rules.addDefaultRules(SimpleRewriter)
+
+    SimpleRewriter.pp_rules
 
     if (doTraining) {
       reporter.info("Training MaSh Filter from user guide...")
@@ -262,6 +246,7 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
     }
 
     solvers.foreach(_.free())
+    rwSolver.free()
 
     if (create_testcase) {
       reporter.info("Writing down options and output...")

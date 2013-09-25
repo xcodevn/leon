@@ -1,4 +1,4 @@
-// A lemma filter for provers
+// A Rewriter for simp_tac
 
 package leon
 package solvers
@@ -18,7 +18,7 @@ case class SIMP_SAME()    extends SIMPRESULT
 case class SIMP_FAIL(msg: String) extends SIMPRESULT
 
 // FIXME: lhs: should be a PATTERN
-case class RewriteRule (val name: String, val conds: Seq[Expr], val lhs: Expr, val rhs: Expr)
+case class RewriteRule (val name: String, val conds: Seq[Expr], val lhs: Expr, val rhs: Expr, val weight: Int)
 
 //
 // This class is built base on Solver.scala
@@ -29,7 +29,15 @@ abstract class Rewriter {
 
   def createPattern(lhs: Expr, rhs: Expr) = {
     // FIXME: do it later please 
+  }
 
+  def pp_rules = {
+    println("List of current rules:")
+    var c = 1
+    for (ru <- rules) {
+      println("#%d\nName: %s\nConds: %s\nLHS: %s\nRHS: %s".format(c, ru.name, ru.conds.toString, ru.lhs.toString, ru.rhs.toString))
+      c = c + 1
+    }
   }
 
   def instantiate(expr: Expr, m: Map[Identifier, Expr]): Expr = expr match {
@@ -143,10 +151,28 @@ object SimpleRewriter extends Rewriter {
   }
 
 
-  def simplify(sf: SolverFactory[Solver])(expr: Expr, proofContext: Seq[Expr]): (Expr, SIMPRESULT) = {
+  def simplify(sf: SolverFactory[Solver])(old_expr: Expr, proofContext: Seq[Expr]): (Expr, SIMPRESULT) = {
     // println("Simplify: " + expr.toString)
     val solver = SimpleSolverAPI(sf.withTimeout(1000L))
-    for (RewriteRule(rname, conds, lhs, rhs) <- rules) {
+    val (expr,rl) = old_expr match {
+      case UnaryOperator(t, recons) => {
+        val (ex, rl) = simplify(sf)(t, proofContext)
+        (recons(ex), SIMP_SUCCESS())
+      }
+
+      case BinaryOperator(t, y, recons) => {
+        val (ex1, rl1) = simplify(sf)(t, proofContext)
+        val (ex2, rl2) = simplify(sf)(y, proofContext)
+        (recons(ex1, ex2), SIMP_SUCCESS())
+      }
+
+      case n @ NAryOperator(args, recons) => {
+        (recons(args.map ( ar => { val (ex, rl) = simplify(sf)(ar, proofContext); ex } )), SIMP_SUCCESS())
+      }
+
+      case _ => (old_expr, SIMP_SUCCESS())
+    }
+    for (RewriteRule(rname, conds, lhs, rhs, w) <- rules.sortWith(_.weight > _.weight)) {
       val varsInLHS = variablesOf(lhs)
       val (isMatched, m) = exprMatch(lhs, expr)
       if (isMatched) {
@@ -160,9 +186,9 @@ object SimpleRewriter extends Rewriter {
         }
 
         def toRewriteRule(expr: Expr): RewriteRule = expr match {
-          case Equals(lhs, rhs @ Variable(id)) if !varsInLHS.contains(id) => RewriteRule("somename", Seq(), lhs, rhs)
-          case Implies(And(conds), Equals(lhs, rhs @ Variable(id))) if !varsInLHS.contains(id) => RewriteRule("somename", conds, lhs, rhs)
-          case Implies(cond, Equals(lhs, rhs @ Variable(id))) if !varsInLHS.contains(id) => RewriteRule("somename", Seq(cond), lhs, rhs)
+          case Equals(lhs, rhs @ Variable(id)) if !varsInLHS.contains(id) => RewriteRule("somename", Seq(), lhs, rhs,0)
+          case Implies(And(conds), Equals(lhs, rhs @ Variable(id))) if !varsInLHS.contains(id) => RewriteRule("somename", conds, lhs, rhs,0)
+          case Implies(cond, Equals(lhs, rhs @ Variable(id))) if !varsInLHS.contains(id) => RewriteRule("somename", Seq(cond), lhs, rhs, 0)
           case _ => {
             println(expr)
             throw new Throwable("We don't want this case!")
@@ -178,7 +204,7 @@ object SimpleRewriter extends Rewriter {
         solver.solveSAT(And(Seq(Not(And(realConds))) ++ proofContext)) match {
           case (Some(false),_)  =>
             val newM = m ++ conds.filter(isSubSimplify(_)).foldLeft (Map[Identifier,Expr]()) ( (curVal, cond) =>{
-              val RewriteRule(rname1, conds1, lhs1, rhs1) = toRewriteRule(cond)
+              val RewriteRule(rname1, conds1, lhs1, rhs1, w) = toRewriteRule(cond)
               val new_lhs1 = instantiate(lhs1, m)
               val new_conds1 = instantiate(And(conds1), m)
               val (s_lhs1, rl) = simplify(sf)(new_lhs1, Seq(new_conds1) ++ proofContext)
@@ -196,23 +222,6 @@ object SimpleRewriter extends Rewriter {
       }
     }
 
-    expr match {
-      case UnaryOperator(t, recons) => {
-        val (ex, rl) = simplify(sf)(t, proofContext)
-        (recons(ex), SIMP_SUCCESS())
-      }
-
-      case BinaryOperator(t, y, recons) => {
-        val (ex1, rl1) = simplify(sf)(t, proofContext)
-        val (ex2, rl2) = simplify(sf)(y, proofContext)
-        (recons(ex1, ex2), SIMP_SUCCESS())
-      }
-
-      case n @ NAryOperator(args, recons) => {
-        (recons(args.map ( ar => { val (ex, rl) = simplify(sf)(ar, proofContext); ex } )), SIMP_SUCCESS())
-      }
-
-      case _ => (expr, SIMP_SUCCESS())
-    }
+    (expr, rl)
   }
 }
