@@ -40,6 +40,7 @@ abstract class Rewriter {
     }
   }
 
+  def clearRules = rules.clear
   def instantiate(expr: Expr, m: Map[Identifier, Expr]): Expr = expr match {
     case Variable(id) if m.contains(id) => {
       // println("Our map " + m + " map for id: "  + id + " to " + m(id))

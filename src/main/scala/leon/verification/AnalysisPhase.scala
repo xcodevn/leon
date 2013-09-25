@@ -208,6 +208,7 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
     val ctx_wo_filter = LeonContext(new SilentReporter, ctx.interruptManager, ctx.settings, Seq(), Seq(), ctx.timers)
     val rwSolver = new FairZ3SolverFactory(ctx_wo_filter, program)
 
+    SimpleRewriter.clearRules
     for(funDef <- program.definedFunctions.toList.sortWith((fd1, fd2) => fd1 < fd2)) {
       println(funDef.id)
       val rus = Rules.createFunctionRewriteRules(funDef, program)
