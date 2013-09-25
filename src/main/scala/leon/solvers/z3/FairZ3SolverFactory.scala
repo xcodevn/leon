@@ -550,8 +550,8 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
         //val blockingSetAsZ3 : Seq[Z3AST] = blockingSet.toSeq.map(toZ3Formula(_).get)
         // println("Blocking set : " + blockingSet)
 
-        reporter.info(solver.getAssertions.toSeq.mkString("(assert ", ")\n(assert ", ")\n"))
-        reporter.info(unrollingBank.z3CurrentZ3Blockers.mkString("(assert ",")\n(assert ",")\n"))
+        // reporter.info(solver.getAssertions.toSeq.mkString("(assert ", ")\n(assert ", ")\n"))
+        // reporter.info(unrollingBank.z3CurrentZ3Blockers.mkString("(assert ",")\n(assert ",")\n"))
 
         reporter.debug(" - Running Z3 search...")
         reporter.debug("Searching in:\n"+solver.getAssertions.toSeq.mkString("(assert ", ")\n(assert ", ")\n"))
@@ -665,6 +665,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
                 solver.pop()  // FIXME: remove when z3 bug is fixed
               solver.pop()  // restore non using lemma state
 
+              /*
               val qua = solver.getQuantifierInstances
               for (i <- qua) {
                 try {
@@ -677,6 +678,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
                 }
                 } catch { case _ => }
               }
+              */
 
              reporter.info("Real return result: " + res2.toString)
               val adjustedForUnknowns = if(false || !useLemmas) res2 else res2 match {

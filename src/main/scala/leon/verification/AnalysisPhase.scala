@@ -75,14 +75,21 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
 
     /* Just for testing */
    val p = Variable(FreshIdentifier("cond")).setType(BooleanType)
-   val e1= Variable(FreshIdentifier("cond"))
-   val e2= Variable(FreshIdentifier("cond"))
+   val e1= Variable(FreshIdentifier("e1"))
+   val e2= Variable(FreshIdentifier("e2"))
+   val rve1= Variable(FreshIdentifier("rve1"))
+   val rve2= Variable(FreshIdentifier("rve2"))
    val iteExpr = IfExpr(p, e1, e2)
    val truee = BooleanLiteral(true)
+   val falsee = BooleanLiteral(false)
    val cond = Equals(p, truee)
 
-    SimpleRewriter.addRewriteRule(RewriteRule(Seq(cond), iteExpr, e1))
-    SimpleRewriter.addRewriteRule(RewriteRule(Seq(Not(cond)), iteExpr, e2))
+    SimpleRewriter.addRewriteRule(RewriteRule("If_P", Seq(cond), iteExpr, e1))
+    SimpleRewriter.addRewriteRule(RewriteRule("If_Not_P", Seq(Not(cond)), iteExpr, e2))
+    SimpleRewriter.addRewriteRule(RewriteRule("Equal_True", Seq(Equals(e1, e2)), Equals(e1,e2), truee))
+    SimpleRewriter.addRewriteRule(RewriteRule("Equal_False", Seq(Not(Equals(e1, e2))), Equals(e1,e2), falsee))
+    SimpleRewriter.addRewriteRule(RewriteRule("Imply_Local_Assumtion", Seq(Equals(e1, rve1), Implies(e1,Equals(e2, rve2))), Implies(e1,e2),
+      Implies(e1, rve2)))
 
     for((funDef, vcs) <- vcs.toSeq.sortWith((a,b) => a._1 < b._1); vcInfo <- vcs if !interruptManager.isInterrupted()) {
       val funDef = vcInfo.funDef
@@ -94,24 +101,21 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
       reporter.debug(simplifyLets(vc))
       val svc = simplifyLets(vc)
 
-      val out = SimpleRewriter.simplify(rwSolver)(svc, Seq())
-      println("Our output \n============\n"  + out._1 + "\n=============\n")
-      val out1 = SimpleRewriter.simplify(rwSolver)(out._1, Seq())
-      println("Our output \n============\n"  + simplifyLets(out1._1) + "\n=============\n")
-      val out2 = SimpleRewriter.simplify(rwSolver)(out1._1, Seq())
-      println("Our output \n============\n"  + simplifyLets(out2._1) + "\n=============\n")
-      val out3 = SimpleRewriter.simplify(rwSolver)(out2._1, Seq())
-      println("Our output \n============\n"  + simplifyLets(out3._1) + "\n=============\n")
-      val out4 = SimpleRewriter.simplify(rwSolver)(out3._1, Seq())
-      println("Our output \n============\n"  + simplifyLets(out4._1) + "\n=============\n")
-      vcs
-      /*
+      def rec_simp(ex: Expr): Expr = {
+        val out = SimpleRewriter.simplify(rwSolver)(ex, Seq())
+        out._1
+        // if (out._1 != ex) rec_simp(out._1) else ex
+      }
+
+      println("Simplify: \n" + svc + "\n======")
+      val ss_svc = rec_simp(svc)
+      println("Our output \n============\n"  +ss_svc.toString + "\n=============\n")
 
       // try all solvers until one returns a meaningful answer
       solvers.find(se => {
         reporter.debug("Trying with solver: " + se.name)
         val t1 = System.nanoTime
-        val (satResult, counterexample) = SimpleSolverAPI(se).solveSAT(Not(vc))
+        val (satResult, counterexample) = SimpleSolverAPI(se).solveSAT(Not(ss_svc))
         val solverResult = satResult.map(!_)
 
         val t2 = System.nanoTime
@@ -154,7 +158,6 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
         }
         case _ =>
       }
-      */
     }
 
     val report = new VerificationReport(vcs)
@@ -216,15 +219,17 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
     val reporter = ctx.reporter
 
     val fairZ3 = new FairZ3SolverFactory(ctx, program)
-    val rwSolver = new FairZ3SolverFactory(ctx, program)
+    val ctx_wo_filter = LeonContext(ctx.reporter, ctx.interruptManager, ctx.settings, Seq(), Seq(), ctx.timers)
+    val rwSolver = new FairZ3SolverFactory(ctx_wo_filter, program)
     for(funDef <- program.definedFunctions.toList.sortWith((fd1, fd2) => fd1 < fd2)) {
-      println(funDef.id)
+      // println(funDef.id)
       if (funDef.body.isDefined) {
         val Some(imp) = funDef.body
         println(imp)
-        println(funDef.args)
+        // println(funDef.args)
         val lstArgs = funDef.args.map(arg => { val VarDecl(v, ty) = arg; Variable(v).setType(ty) }).toSeq
-        SimpleRewriter.addRewriteRule(RewriteRule(Seq(), FunctionInvocation(funDef, lstArgs), imp))
+        SimpleRewriter.addRewriteRule(RewriteRule(funDef.id.toString + "_simp",Seq(), FunctionInvocation(funDef, lstArgs),
+          matchToIfThenElse(imp)))
       }
     }
 

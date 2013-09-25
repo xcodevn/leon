@@ -439,7 +439,7 @@ trait AbstractZ3Solver extends SolverFactory[Solver] {
             // assert(!this.isInstanceOf[FairZ3Solver], "Trying to convert unknown variable '"+id+"' while using FairZ3")
 
             val newAST = z3.mkFreshConst(id.uniqueName/*name*/, typeToSort(v.getType))
-            reporter.info("(declare-const %s %s)".format(newAST.toString, typeToSort(v.getType).toString))
+            // reporter.info("(declare-const %s %s)".format(newAST.toString, typeToSort(v.getType).toString))
             z3Vars = z3Vars + (id -> newAST)
             exprToZ3Id += (v -> newAST)
             z3IdToExpr += (newAST -> v)
@@ -795,7 +795,7 @@ trait AbstractZ3Solver extends SolverFactory[Solver] {
 
   def idToFreshZ3Id(id: Identifier): Z3AST = {
     val idd = z3.mkFreshConst(id.uniqueName, typeToSort(id.getType))
-    reporter.info("(declare-const %s %s)".format(idd.toString, typeToSort(id.getType).toString))
+    // reporter.info("(declare-const %s %s)".format(idd.toString, typeToSort(id.getType).toString))
     val newid = FreshIdentifier(idd.toString).setType(id.getType)
     // z3IdToExpr += (idd -> Variable(newid))
     //exprToZ3Id += (Variable(newid) ->idd)
