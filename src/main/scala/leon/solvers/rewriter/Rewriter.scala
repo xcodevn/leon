@@ -151,10 +151,9 @@ object SimpleRewriter extends Rewriter {
 
   }
 
-
   def simplify(sf: SolverFactory[Solver])(old_expr: Expr, proofContext: Seq[Expr]): (Expr, SIMPRESULT) = {
     // println("Simplify: " + expr.toString)
-    val solver = SimpleSolverAPI(sf.withTimeout(100L))
+    val solver = SimpleSolverAPI(sf.withTimeout(10L))
     val (expr,rl) = old_expr match {
       case UnaryOperator(t, recons) => {
         val (ex, rl) = simplify(sf)(t, proofContext)

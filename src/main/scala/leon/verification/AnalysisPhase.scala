@@ -66,7 +66,8 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
     allVCs
   }
 
-  def checkVerificationConditions(vctx: VerificationContext, vcs: Map[FunDef, List[VerificationCondition]], rwSolver: SolverFactory[Solver]) : VerificationReport = {
+  def checkVerificationConditions(vctx: VerificationContext, vcs: Map[FunDef, List[VerificationCondition]], cap: Option[(Program,
+    LeonContext)] = None) : VerificationReport = {
     val reporter = vctx.reporter
     val solvers  = vctx.solvers
 
@@ -83,9 +84,16 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
       val svc = simplifyLets(vc)
 
       def rec_simp(ex: Expr): Expr = {
-        val out = SimpleRewriter.simplify(rwSolver)(ex, Seq())
-        return out._1
-        if (out._1 != ex) rec_simp(out._1) else ex
+        cap match {
+          case Some((program,ctx)) =>
+            val rwSolver = new FairZ3SolverFactory(ctx, program)
+            val out = SimpleRewriter.simplify(rwSolver)(ex, Seq())
+            rwSolver.free()
+            out._1
+          case _ =>
+            ex
+        }
+        // if (out._1 != ex) rec_simp(out._1) else ex
       }
 
       println("Simplify: \n" + svc + "\n======")
@@ -205,10 +213,8 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
       override def output(msg: String) : Unit = { }
     }
 
-    val ctx_wo_filter = LeonContext(new SilentReporter, ctx.interruptManager, ctx.settings, Seq(), Seq(), ctx.timers)
-    val rwSolver = new FairZ3SolverFactory(ctx_wo_filter, program)
-
     SimpleRewriter.clearRules
+    val ctx_wo_filter = LeonContext(new SilentReporter, ctx.interruptManager, ctx.settings, Seq(), Seq(), ctx.timers)
     for(funDef <- program.definedFunctions.toList.sortWith((fd1, fd2) => fd1 < fd2)) {
       println(funDef.id)
       val rus = Rules.createFunctionRewriteRules(funDef, program)
@@ -240,14 +246,13 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
     val report = if(solvers.size >= 1) {
       reporter.debug("Running verification condition generation...")
       val vcs = generateVerificationConditions(reporter, program, functionsToAnalyse)
-      checkVerificationConditions(vctx, vcs, rwSolver)
+      checkVerificationConditions(vctx, vcs, Option((program,ctx_wo_filter)))
     } else {
       reporter.warning("No solver specified. Cannot test verification conditions.")
       VerificationReport.emptyReport
     }
 
     solvers.foreach(_.free())
-    rwSolver.free()
 
     if (create_testcase) {
       reporter.info("Writing down options and output...")
