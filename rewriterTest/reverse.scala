@@ -31,7 +31,9 @@ object Reverse {
   } holds
 
   @induct
+  @lemma
   def revrev_lemma(l: List):Boolean = {
+    require(l != Nil())
     rev(rev(l)) == l
   } holds
 

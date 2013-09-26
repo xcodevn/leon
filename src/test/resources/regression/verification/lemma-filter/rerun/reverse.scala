@@ -26,19 +26,14 @@ object Reverse {
 
   @lemma
   @induct
-  def app_rev_lemma(l2: List, l1: List) = {
-    app(rev(l1), rev(l2)) == rev(app(l2, l1))
+  def rev_app_lemma(l1: List, l2: List) = {
+    rev(app(l1, l2)) == app(rev(l2), rev(l1))
   } holds
 
 
-  @lemma
+  @induct
   def rev_rev_lemma(l: List):Boolean = {
-    l match {
-      case Nil() => true
-      case Cons(x, xs) => rev_rev_lemma(xs) && 
-                          // rev(app(rev(xs), Cons(x, Nil()))) == app(rev(Cons(x, Nil())), rev(rev(xs)))
-                          l == app(rev(Cons(x, Nil())), rev(rev(xs)))
-    }
-  } ensuring {res => res && rev(rev(l)) == l}
+    rev(rev(l)) == l
+  } holds
 
 }

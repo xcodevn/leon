@@ -3,6 +3,7 @@ appnil_lemma              postcond.           valid    induction  Z3-f
 appnil_lemma              postcond.           valid    induction  Z3-f   
 app_assoc_lemma           postcond.           valid    induction  Z3-f   
 app_assoc_lemma           postcond.           valid    induction  Z3-f   
-app_rev_lemma             postcond.           valid    induction  Z3-f   
-app_rev_lemma             postcond.           valid    induction  Z3-f   
-rev_rev_lemma             postcond.           valid               Z3-f   
+rev_app_lemma             postcond.           valid    induction  Z3-f   
+rev_app_lemma             postcond.           valid    induction  Z3-f   
+rev_rev_lemma             postcond.           valid    induction  Z3-f   
+rev_rev_lemma             postcond.           valid    induction  Z3-f   

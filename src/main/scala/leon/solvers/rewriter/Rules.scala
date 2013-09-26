@@ -79,8 +79,14 @@ object Rules {
 
       // lemma rewrite rules
       val s1 = if(fd.annotations.contains("lemma")) {
+        println(fd)
+        val precond = fd.precondition match {
+          case Some(pre) => Seq(pre)
+          case _         => Seq()
+        }
+
         imp match {
-          case Equals(e1, e2) => Seq( RewriteRule(fn + "_simp_lemma", Seq(), e1, e2, 20) )
+          case Equals(e1, e2) => Seq( RewriteRule(fn + "_simp_lemma", precond, e1, e2, 20) )
           case _ => Seq()
         }
       } else Seq()

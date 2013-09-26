@@ -63,14 +63,14 @@ object Nat {
   @induct
   @depend()
   def plusOne_lemma1(a: Nat): Boolean = {
-    Succ(a) == plus(one(), a)
+    plus(one(), a)  == Succ(a)
   } holds
 
   @lemma
   @induct
   @depend()
   def plusOne_lemma2(a: Nat): Boolean = {
-    Succ(a) == plus(a, one())
+    plus(a, one()) == Succ(a)
   } holds
 
   @lemma
@@ -95,10 +95,7 @@ object Nat {
     }
   } ensuring { res => res && plus(a, b) == plus(b, a) }
 
-  def isOdd(n: Nat): Boolean = n match {
-    case Zero()      => false
-    case Succ(n1)   => ! isOdd(n1)
-  }
+  def isOdd(n: Nat): Boolean = if (n == Zero()) false else { val Succ(n1) = n; !isOdd(n1) }
 
   def isEven(n: Nat) = !isOdd(n)
 
@@ -126,10 +123,8 @@ object Nat {
   def sumOdd_lemma(n1: Nat, n2: Nat): Boolean = {
     require(isOdd(n1) && isOdd(n2))
     (n1, n2) match {
-      case (Succ(n10), Succ(n20)) => isEven(n10) && isEven(n20)  &&
-                                      // sumEven_lemma(n10,n20) &&
-                                      isEven(plus(n10,n20))
+      case (Succ(n10), Succ(n20)) => isEven(n10) && isEven(n20) && sumEven_lemma(n10, n20)
     }
-  } ensuring {res => res && isEven(plus(n1, n2))}
+  } ensuring { res => res && isEven(plus(n1, n2)) }
 
 }

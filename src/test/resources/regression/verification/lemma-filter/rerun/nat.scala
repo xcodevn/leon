@@ -63,14 +63,14 @@ object Nat {
   @induct
   @depend()
   def plusOne_lemma1(a: Nat): Boolean = {
-    Succ(a) == plus(one(), a)
+    plus(one(), a) == Succ(a)
   } holds
 
   @lemma
   @induct
   @depend()
   def plusOne_lemma2(a: Nat): Boolean = {
-    Succ(a) == plus(a, one())
+    plus(a, one()) == Succ(a)
   } holds
 
   @lemma
