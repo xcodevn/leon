@@ -49,7 +49,8 @@ abstract class Rewriter {
     }
 
     case UnaryOperator(t, recons) => {
-      recons(instantiate(t, m))
+      recons(instantiate(t, m)).setType(expr.getType)
+
     }
 
     case BinaryOperator(t, y, recons) => {
@@ -57,11 +58,11 @@ abstract class Rewriter {
       val i2 = instantiate(y, m)
 
       // println(" i1 i2 " + i1 + " : " + i2)
-      recons(i1, i2)
+      recons(i1, i2).setType(expr.getType)
     }
 
     case n @ NAryOperator(args, recons) => {
-      recons(args.map(ag => instantiate(ag, m)))
+      recons(args.map(ag => instantiate(ag, m))).setType(expr.getType)
     }
 
     case t @ _ => t
@@ -158,17 +159,17 @@ object SimpleRewriter extends Rewriter {
     val (expr,rl) = old_expr match {
       case UnaryOperator(t, recons) => {
         val (ex, rl) = simplify(sf)(t, proofContext)
-        (recons(ex), SIMP_SUCCESS())
+        (recons(ex).setType(old_expr.getType), SIMP_SUCCESS())
       }
 
       case BinaryOperator(t, y, recons) => {
         val (ex1, rl1) = simplify(sf)(t, proofContext)
         val (ex2, rl2) = simplify(sf)(y, proofContext)
-        (recons(ex1, ex2), SIMP_SUCCESS())
+        (recons(ex1, ex2).setType(old_expr.getType), SIMP_SUCCESS())
       }
 
       case n @ NAryOperator(args, recons) => {
-        (recons(args.map ( ar => { val (ex, rl) = simplify(sf)(ar, proofContext); ex } )), SIMP_SUCCESS())
+        (recons(args.map ( ar => { val (ex, rl) = simplify(sf)(ar, proofContext); ex } )).setType(old_expr.getType), SIMP_SUCCESS())
       }
 
       case _ => (old_expr, SIMP_SUCCESS())
@@ -201,7 +202,7 @@ object SimpleRewriter extends Rewriter {
 
         val realConds = conds.filter(!isSubSimplify(_)).map(cond => instantiate(cond, m))
         // println("Real conds : " + realConds)
-        // println("check SAT " + And(Seq(Not(And(realConds))) ++ proofContext))
+        println("check SAT " + And(Seq(Not(And(realConds))) ++ proofContext))
         solver.solveSAT(And(Seq(Not(And(realConds))) ++ proofContext)) match {
           case (Some(false),_)  =>
             val newM = m ++ conds.filter(isSubSimplify(_)).foldLeft (Map[Identifier,Expr]()) ( (curVal, cond) =>{
