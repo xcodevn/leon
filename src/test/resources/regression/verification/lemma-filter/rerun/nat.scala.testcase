@@ -1,4 +1,4 @@
-filter:MaSh training:true
+filter:MePo training:false
 sum_lemma                 postcond.           valid               Z3-f   
 plus_zero_lemma           postcond.           valid    induction  Z3-f   
 plus_zero_lemma           postcond.           valid    induction  Z3-f   

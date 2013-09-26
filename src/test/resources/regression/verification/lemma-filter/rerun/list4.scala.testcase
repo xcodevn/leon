@@ -1,4 +1,4 @@
-filter:MaSh training:true
+filter:MePo training:false
 appnil                    postcond.           valid    induction  Z3-f   
 appnil                    postcond.           valid    induction  Z3-f   
 app_assoc                 postcond.           valid    induction  Z3-f   

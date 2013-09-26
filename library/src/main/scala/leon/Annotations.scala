@@ -10,4 +10,5 @@ object Annotations {
   class main extends StaticAnnotation
   class lemma extends StaticAnnotation
   class depend(lemmas: String*) extends StaticAnnotation
+  class simp extends StaticAnnotation
 }

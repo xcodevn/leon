@@ -1,4 +1,4 @@
-filter:MePo training:false
+training:false
 appnil_lemma              postcond.           valid    induction  Z3-f   
 appnil_lemma              postcond.           valid    induction  Z3-f   
 app_assoc_lemma           postcond.           valid    induction  Z3-f   

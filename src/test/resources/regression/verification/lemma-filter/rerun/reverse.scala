@@ -18,15 +18,18 @@ object Reverse {
 
   @lemma
   @induct
+  @simp
   def appnil_lemma(l: List) = { app(l, Nil() ) == l } holds
 
   @lemma
   @induct
+  @simp
   def app_assoc_lemma(l1: List, l2: List, l3: List) = { app(l1, app(l2, l3)) == app( app(l1, l2), l3) } holds
 
   @lemma
   @induct
-  def rev_app_lemma(l1: List, l2: List) = {
+  @simp
+  def rev_app_lemma(l2: List, l1: List) = {
     rev(app(l1, l2)) == app(rev(l2), rev(l1))
   } holds
 

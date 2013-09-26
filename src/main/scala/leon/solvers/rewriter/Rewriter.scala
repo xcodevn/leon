@@ -31,13 +31,14 @@ abstract class Rewriter {
     // FIXME: do it later please 
   }
 
-  def pp_rules = {
+  def pp_rules: String = {
     println("List of current rules:")
     var c = 1
-    for (ru <- rules) {
-      println("#%d\nName: %s\nConds: %s\nLHS: %s\nRHS: %s".format(c, ru.name, ru.conds.toString, ru.lhs.toString, ru.rhs.toString))
+    val s = for (ru <- rules) yield {
       c = c + 1
+      "#%d\nName: %s\nConds: %s\nLHS: %s\nRHS: %s".format(c, ru.name, ru.conds.toString, ru.lhs.toString, ru.rhs.toString)
     }
+    s.mkString("\n")
   }
 
   def clearRules = rules.clear
@@ -153,7 +154,7 @@ object SimpleRewriter extends Rewriter {
 
   def simplify(sf: SolverFactory[Solver])(old_expr: Expr, proofContext: Seq[Expr]): (Expr, SIMPRESULT) = {
     // println("Simplify: " + expr.toString)
-    val solver = SimpleSolverAPI(sf.withTimeout(10L))
+    val solver = SimpleSolverAPI(sf.withTimeout(100L))
     val (expr,rl) = old_expr match {
       case UnaryOperator(t, recons) => {
         val (ex, rl) = simplify(sf)(t, proofContext)

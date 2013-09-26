@@ -90,8 +90,8 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
             val out = SimpleRewriter.simplify(rwSolver)(ex, Seq())
             rwSolver.free()
             out._1
-          case _ =>
-            ex
+
+          case _ => ex
         }
         // if (out._1 != ex) rec_simp(out._1) else ex
       }
@@ -209,20 +209,33 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
 
     val fairZ3 = new FairZ3SolverFactory(ctx, program)
 
+    def isFlagTurnOn(f: String, ctx: LeonContext): Boolean = {
+      for (op <- ctx.options) {
+        op match {
+          case LeonFlagOption(f, v) => return v
+          case _ =>
+        }
+      }
+      false
+    }
+
     class SilentReporter extends DefaultReporter(Settings()) {
       override def output(msg: String) : Unit = { }
     }
 
     SimpleRewriter.clearRules
     val ctx_wo_filter = LeonContext(new SilentReporter, ctx.interruptManager, ctx.settings, Seq(), Seq(), ctx.timers)
-    for(funDef <- program.definedFunctions.toList.sortWith((fd1, fd2) => fd1 < fd2)) {
-      println(funDef.id)
-      val rus = Rules.createFunctionRewriteRules(funDef, program)
-      for (ru <- rus) SimpleRewriter.addRewriteRule(ru)
-    }
-    Rules.addDefaultRules(SimpleRewriter)
+    if (!(isFlagTurnOn("codegen", ctx) || isFlagTurnOn("feelinglucky", ctx) || isFlagTurnOn("evalground", ctx))) {
 
-    SimpleRewriter.pp_rules
+      for(funDef <- program.definedFunctions.toList.sortWith((fd1, fd2) => fd1 < fd2)) {
+        println(funDef.id)
+        val rus = Rules.createFunctionRewriteRules(funDef, program)
+        for (ru <- rus) SimpleRewriter.addRewriteRule(ru)
+      }
+      Rules.addDefaultRules(SimpleRewriter)
+
+      reporter.info(SimpleRewriter.pp_rules)
+    }
 
     if (doTraining) {
       reporter.info("Training MaSh Filter from user guide...")

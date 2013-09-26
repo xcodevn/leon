@@ -187,6 +187,7 @@ trait CodeExtraction extends Extractors {
               case "leon.Annotations.induct"     => funDef.addAnnotation("induct")
               case "leon.Annotations.axiomatize" => funDef.addAnnotation("axiomatize")
               case "leon.Annotations.lemma"      => funDef.addAnnotation("lemma")
+              case "leon.Annotations.simp"       => funDef.addAnnotation("simp")
               case "leon.Annotations.main"       => funDef.addAnnotation("main")
               case "leon.Annotations.depend"     => {
                 funDef.addAnnotation("depend")
