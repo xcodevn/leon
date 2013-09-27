@@ -904,20 +904,20 @@ object TreeOps {
 
         case UnaryOperator(e, builder) =>
           val (e1, c) = rec(e, ctx)
-          val newE = builder(e1)
+          val newE = builder(e1).setType(expr.getType)
 
           (newE, combiner(Seq(c)))
 
         case BinaryOperator(e1, e2, builder) =>
           val (ne1, c1) = rec(e1, ctx)
           val (ne2, c2) = rec(e2, ctx)
-          val newE = builder(ne1, ne2)
+          val newE = builder(ne1, ne2).setType(expr.getType)
 
           (newE, combiner(Seq(c1, c2)))
 
         case NAryOperator(es, builder) =>
           val (nes, cs) = es.map{ rec(_, ctx)}.unzip
-          val newE = builder(nes)
+          val newE = builder(nes).setType(expr.getType)
 
           (newE, combiner(cs))
 
