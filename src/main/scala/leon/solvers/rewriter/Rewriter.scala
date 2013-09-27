@@ -31,14 +31,24 @@ abstract class Rewriter {
     // FIXME: do it later please 
   }
 
-  def pp_rules: String = {
-    println("List of current rules:")
-    var c = 1
-    val s = for (ru <- rules) yield {
+  class SilentReporter extends DefaultReporter(Settings()) {
+    override def output(msg: String) : Unit = { }
+  }
+
+  var reporter: Reporter = new SilentReporter
+  implicit val debugSection = DebugSectionSolver 
+
+  def setReporter(rp: Reporter) = {
+    reporter = rp
+  }
+
+  def pp_rules = {
+    reporter.debug("List of current rules:")
+    var c = 0
+    for (ru <- rules) {
       c = c + 1
-      "#%d\nName: %s\nConds: %s\nLHS: %s\nRHS: %s".format(c, ru.name, ru.conds.toString, ru.lhs.toString, ru.rhs.toString)
+      reporter.debug("#%d\nName: %s\nConds: %s\nLHS: %s\nRHS: %s".format(c, ru.name, ru.conds.toString, ru.lhs.toString, ru.rhs.toString))
     }
-    s.mkString("\n")
   }
 
   def clearRules = rules.clear
@@ -174,6 +184,7 @@ object SimpleRewriter extends Rewriter {
 
       case _ => (old_expr, SIMP_SUCCESS())
     }
+
     for (RewriteRule(rname, conds, lhs, rhs, w) <- rules.sortWith(_.weight > _.weight)) {
       val varsInLHS = variablesOf(lhs)
       val (isMatched, m) = exprMatch(lhs, expr)
@@ -196,28 +207,30 @@ object SimpleRewriter extends Rewriter {
             throw new Throwable("We don't want this case!")
 
           }
-
-
         }
 
         val realConds = conds.filter(!isSubSimplify(_)).map(cond => instantiate(cond, m))
         // println("Real conds : " + realConds)
-        println("check SAT " + And(Seq(Not(And(realConds))) ++ proofContext))
+        // println("check SAT " + And(Seq(Not(And(realConds))) ++ proofContext))
         solver.solveSAT(And(Seq(Not(And(realConds))) ++ proofContext)) match {
           case (Some(false),_)  =>
             val newM = m ++ conds.filter(isSubSimplify(_)).foldLeft (Map[Identifier,Expr]()) ( (curVal, cond) =>{
               val RewriteRule(rname1, conds1, lhs1, rhs1, w) = toRewriteRule(cond)
-              val new_lhs1 = instantiate(lhs1, m)
-              val new_conds1 = instantiate(And(conds1), m)
-              val (s_lhs1, rl) = simplify(sf)(new_lhs1, Seq(new_conds1) ++ proofContext)
               val Variable(id) = rhs1
-              // println("Add new elem: "+ (id, s_lhs1))
-              curVal + (id -> s_lhs1)
+              lhs1 match {
+                case Variable(idd) if m.contains(idd) && conds1.size == 0 => curVal + (id -> m(idd))
+                case _ => 
+                  val new_lhs1 = instantiate(lhs1, m)
+                  val new_conds1 = instantiate(And(conds1), m)
+                  val (s_lhs1, rl) = simplify(sf)(new_lhs1, Seq(new_conds1) ++ proofContext)
+                  // println("Add new elem: "+ (id, s_lhs1))
+                  curVal + (id -> s_lhs1)
+              }
             })
             // println("New Map : " + newM+ " used for RHS : " + rhs)
             val new_rhs = instantiate(rhs, newM)
             // println("after instantiate " + rhs + " became " + new_rhs)
-            println("By using rule: " + rname + " we simplify \n====\n" + expr + "\n----\ninto\n----\n" + new_rhs + "\n====")
+            reporter.debug("By using rule: " + rname + " we simplify \n====\n" + expr + "\n----\ninto\n----\n" + new_rhs + "\n====")
             return (new_rhs, SIMP_SUCCESS())
           case _ => 
         }

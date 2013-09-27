@@ -66,8 +66,7 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
     allVCs
   }
 
-  def checkVerificationConditions(vctx: VerificationContext, vcs: Map[FunDef, List[VerificationCondition]], cap: Option[(Program,
-    LeonContext)] = None) : VerificationReport = {
+  def checkVerificationConditions(vctx: VerificationContext, vcs: Map[FunDef, List[VerificationCondition]], cap: Option[(Program, LeonContext)] = None) : VerificationReport = {
     val reporter = vctx.reporter
     val solvers  = vctx.solvers
 
@@ -83,22 +82,25 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
       reporter.debug(simplifyLets(vc))
       val svc = simplifyLets(vc)
 
-      def rec_simp(ex: Expr): Expr = {
-        cap match {
-          case Some((program,ctx)) =>
-            val rwSolver = new FairZ3SolverFactory(ctx, program)
-            val out = SimpleRewriter.simplify(rwSolver)(ex, Seq())
-            rwSolver.free()
-            out._1
+      def rec_simp(ex: Expr, count: Int = 10): Expr = {
+        if (count == 0) ex else {
+          val rl = cap match {
+            case Some((program,ctx)) =>
+              val rwSolver = new FairZ3SolverFactory(ctx, program)
+              val out = SimpleRewriter.simplify(rwSolver)(ex, Seq())
+              rwSolver.free()
+              out._1
 
-          case _ => ex
+            case _ => ex
+          }
+          if (rl.toString != ex.toString) rec_simp(rl, count - 1)
+          else ex
         }
-        // if (out._1 != ex) rec_simp(out._1) else ex
       }
 
-      println("Simplify: \n" + svc + "\n======")
+      reporter.info("Simplify: \n" + svc + "\n======")
       val ss_svc = rec_simp(svc)
-      println("Our output \n============\n"  +ss_svc.toString + "\n=============\n")
+      reporter.info("Our output \n============\n"  +ss_svc.toString + "\n=============\n")
 
       // try all solvers until one returns a meaningful answer
       solvers.find(se => {
@@ -143,6 +145,7 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
       }) match {
         case None => {
           vcInfo.hasValue = true
+          vcInfo.goal = Option(ss_svc)
           reporter.warning("==== UNKNOWN ====")
         }
         case _ =>
@@ -224,11 +227,12 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
     }
 
     SimpleRewriter.clearRules
+    SimpleRewriter.setReporter(reporter)
     val ctx_wo_filter = LeonContext(new SilentReporter, ctx.interruptManager, ctx.settings, Seq(), Seq(), ctx.timers)
     if (!(isFlagTurnOn("codegen", ctx) || isFlagTurnOn("feelinglucky", ctx) || isFlagTurnOn("evalground", ctx))) {
 
       for(funDef <- program.definedFunctions.toList.sortWith((fd1, fd2) => fd1 < fd2)) {
-        println(funDef.id)
+        // println(funDef)
         val rus = Rules.createFunctionRewriteRules(funDef, program)
         for (ru <- rus) SimpleRewriter.addRewriteRule(ru)
       }

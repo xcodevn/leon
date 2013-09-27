@@ -49,7 +49,8 @@ object Rules {
       // for(funDef <- program.definedFunctions.toList.sortWith((fd1, fd2) => fd1 < fd2)) {
       // println(funDef.id)
     if (fd.body.isDefined) {
-      val Some(imp) = fd.body
+      val Some(imp1) = fd.body
+      val imp = simplifyLets(imp1)
       // println(imp)
       // println(funDef.args)
       val fn = fd.id.toString     // function name
@@ -79,7 +80,7 @@ object Rules {
 
       // lemma rewrite rules
       val s1 = if(fd.annotations.contains("simp") && fd.annotations.contains("lemma")) {
-        println(fd)
+        // println(fd)
         val precond = fd.precondition match {
           case Some(pre) => Seq(pre)
           case _         => Seq()

@@ -18,6 +18,7 @@ class VerificationCondition(val condition: Expr, val funDef: FunDef, val kind: V
   var solvedWith : Option[SolverFactory[Solver]] = None
   var time : Option[Double] = None
   var counterExample : Option[Map[Identifier, Expr]] = None
+  var goal: Option[Expr] = None
 
   def status : String = value match {
     case None => "unknown"
