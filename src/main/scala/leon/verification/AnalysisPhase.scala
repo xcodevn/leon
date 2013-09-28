@@ -187,7 +187,7 @@ object AnalysisPhase extends LeonPhase[Program,VerificationReport] {
 
     val reporter = ctx.reporter
 
-    val fairZ3 = new FairZ3SolverFactory(ctx, program)
+    val fairZ3 = new ExtendedFairZ3Solver(ctx, program)
 
     if (doTraining) {
       reporter.info("Training MaSh Filter from user guide...")

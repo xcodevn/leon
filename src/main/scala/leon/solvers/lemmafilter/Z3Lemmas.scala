@@ -10,41 +10,100 @@ import purescala.TreeOps._
 import purescala.TypeTrees._
 import purescala.Common._
 import leon.purescala.Definitions._
+import leon.solvers._
 
-object LemmaTools {
-  def isTrueLemma(funDef: FunDef): Boolean = {
-    if (!funDef.annotations.contains("lemma")) false
-    else {
-      val fname = funDef.id.name
+class ExtendedFairZ3Solver(context : LeonContext, program: Program) extends FairZ3SolverFactory(context, program) {
 
-      if (!(funDef.returnType == BooleanType)) {
-        false
-      } else {
-        funDef.postcondition match {
-          case None =>
-            false
-          case Some((id, post)) =>
-            if (id.getType != BooleanType) {
-              false
+  val (lemmaFlag, filterOption, numLemmasOption) = locally {
+    var lemmaFlag = false
+    var filterOption = "NOTUSED"
+    var numLemmasOption = 2
+    for(opt <- context.options) opt match {
+      case LeonFlagOption("lemmas", v)             => lemmaFlag           = v
+      case LeonValueOption("filter", v)            => { filterOption = v; if (v=="MaSh" || v == "MePo") lemmaFlag = true }
+      case LeonValueOption("num-lemmas", v)        => numLemmasOption = v.toInt
+        
+      case _ =>
+    }
+    (lemmaFlag, filterOption, numLemmasOption)
+  }
+
+  override def getNewSolver = {
+    val solver = super.getNewSolver
+    new Solver {
+      var addLemmaYet = false
+      def interrupt = solver.interrupt
+      def recoverInterrupt = solver.recoverInterrupt
+      def assertCnstr(expression: leon.purescala.Trees.Expr): Unit = {
+        solver.assertCnstr(expression)
+        if (!addLemmaYet)
+          filter(expression)
+        addLemmaYet = true
+      }
+      def check = solver.check
+      def checkAssumptions(assumptions: Set[leon.purescala.Trees.Expr]) = solver.checkAssumptions(assumptions)
+      def getModel = solver.getModel
+      def getUnsatCore = solver.getUnsatCore
+      def pop(lvl: Int) = solver.pop(lvl)
+      def push = solver.push
+    }
+  }
+
+  def filter(expression: Expr) = {
+    /* Only use filter in the first time of calling this function */
+    if(lemmaFlag) {
+      filterOption match {
+        case "MaSh" =>
+          val MaShfilter = new MaShFilter(context, program)
+          val curFun = program.definedFunctions.filter(f=>f.isReach).sortWith( (fd1,fd2) => fd1 < fd2 ).reverse.head
+          val funs = curFun +: program.definedFunctions.filter(f => f < curFun)
+          if (curFun.annotations.contains("depend")) {
+            curFun.dependencies match { case Some(deps) => prepareLemmas(funs.filter(f => deps.contains(f.id.name.toString))); case _ => }
+          } else {
+            val m = funs.tail.filter(f => f.annotations.contains("lemma")).map( f => (f, Error(":-)"))).toMap
+            if (m.size > 0)
+              prepareLemmas(MaShfilter.filter(expression, m, numLemmasOption) )
+          }
+          MaShfilter.fairZ3.free() // go away z3 ;)
+
+        case "MePo" =>
+          val MePofilter = new MePoFilter(context, program)
+          val curFun = program.definedFunctions.filter(f=>f.isReach).sortWith( (fd1,fd2) => fd1 < fd2 ).reverse.head
+          val funs = curFun +: program.definedFunctions.filter(f => f < curFun)
+          if (curFun.annotations.contains("depend")) {
+            curFun.dependencies match { case Some(deps) => prepareLemmas(funs.filter(f => deps.contains(f.id.name.toString))); case _ => }
+          } else {
+            val m = funs.tail.filter(f => f.annotations.contains("lemma")).map( f => (f, MePofilter.genVC(f))).toMap
+            if (m.size > 0) {
+              val res = MePofilter.filter(expression, m, numLemmasOption)
+              prepareLemmas(res)
             }
-            else {
-              funDef.implementation match {
-                case None =>
-                  false
-                case Some(imple) => true
-              }
-            }
-        }
+          }
+          MePofilter.fairZ3.free() // I don't need you anymore
+
+        case _ =>
+          prepareLemmas(program.definedFunctions.filter(f=> f.annotations.contains("lemma"))) /* As before I come here ;) */
       }
     }
   }
-}
 
-object Z3Lemmas {
-  private lazy val lemmaPost = FreshIdentifier("res").setType(BooleanType)
+  def unfold(expr: Expr, times: Int): Seq[Z3AST] = {
+    val unrollingBank = new UnrollingBank()
+    val newClauses = unrollingBank.scanForNewTemplates(expr)
 
+    val cl = for (c <- 0 until times) yield {
+      val toRelease = unrollingBank.getZ3BlockersToUnlock
 
-  def prepareLemmas(z3: Z3Context, solver: Z3Solver, fairSolver: AbstractZ3Solver, funDefs: Seq[FunDef]): Unit = {
+      val kk = for (id <- toRelease) yield {
+        unrollingBank.unlock(id)
+      }
+      kk.flatten
+    }
+
+    newClauses ++ cl.flatten
+  }
+
+  def prepareLemmas(funDefs: Seq[FunDef]): Unit = {
     val lemmaZ3ASTs: MutableList[Z3AST] = new MutableList[Z3AST]()
     for (funDef <- funDefs) {
       if (LemmaTools.isTrueLemma(funDef)) {
@@ -62,14 +121,14 @@ object Z3Lemmas {
           }
 
           val fArgs: Seq[Variable] = funDef.args.map(_.toVariable)
-          val argSorts: Seq[Z3Sort] = fArgs.map(v => fairSolver.typeToSort(v.getType))
+          val argSorts: Seq[Z3Sort] = fArgs.map(v => typeToSort(v.getType))
           val bounds: Seq[Z3AST] = argSorts.zipWithIndex.map { case (s, i) => z3.mkBound(i, s) }
           val namedBounds: Seq[(Z3Symbol, Z3Sort)] = argSorts.map(a => (z3.mkFreshStringSymbol("qx"), a))
           val initialMap: Map[Identifier, Z3AST] = fArgs.map(_.id).zip(bounds).toMap
 
           // FIXME : that ".get" is bolder that we want it to be.
           // Also: Apply matchToIfThenElse and let-expansion
-          val quantBody: Z3AST = fairSolver.toZ3Formula(matchToIfThenElse(lemmaBody), initialMap).get
+          val quantBody: Z3AST = toZ3Formula(matchToIfThenElse(lemmaBody), initialMap).get
 
           val varSet: Set[Identifier] = fArgs.map(_.id).toSet
           val preMps: Set[Set[Expr]] = funDef.precondition match {
@@ -91,7 +150,7 @@ object Z3Lemmas {
               // reporter.info("--- ")
               // reporter.info("--- " + mp.mkString("[", "; ", "]"))
 
-              mp.toSeq.map(c => fairSolver.toZ3Formula(c, initialMap).get)
+              mp.toSeq.map(c => toZ3Formula(c, initialMap).get)
             }
 
             // reporter.info(lst.toSeq)
@@ -110,13 +169,15 @@ object Z3Lemmas {
 
             // reporter.info("Look ! I made an axiom !")
             // reporter.info(axiom.toString)
-            solver.assertCnstr(axiom)
+            // solver.assertCnstr(axiom)
           }
         }
       } else {
           // reporter.error("[%s] is NOT a nine lemma!".format(funDef.id.name))
       }
     }
+
+    if (lemmaZ3ASTs.size > 0) lemmas = Some(lemmaZ3ASTs)
   }
 
   /* This attempts to find a good set of patterns ("multipatterns") that will work
@@ -198,5 +259,35 @@ object Z3Lemmas {
     }
 
     ok
+  }
+}
+
+object LemmaTools {
+
+  def isTrueLemma(funDef: FunDef): Boolean = {
+    if (!funDef.annotations.contains("lemma")) false
+    else {
+      val fname = funDef.id.name
+
+      if (!(funDef.returnType == BooleanType)) {
+        false
+      } else {
+        funDef.postcondition match {
+          case None =>
+            false
+          case Some((id, post)) =>
+            if (id.getType != BooleanType) {
+              false
+            }
+            else {
+              funDef.implementation match {
+                case None =>
+                  false
+                case Some(imple) => true
+              }
+            }
+        }
+      }
+    }
   }
 }

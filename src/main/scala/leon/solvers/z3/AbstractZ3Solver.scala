@@ -27,6 +27,8 @@ trait AbstractZ3Solver extends SolverFactory[Solver] {
 
   context.interruptManager.registerForInterrupts(this)
 
+  protected[z3] var lemmas: Option[Seq[Z3AST]] = None
+  // protected[z3] var useLemmaInstances: Boolean = false         <-- Not right now
   private[this] var freed = false
   val traceE = new Exception()
 

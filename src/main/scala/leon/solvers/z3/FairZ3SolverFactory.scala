@@ -336,30 +336,6 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
     }
   }
 
-  /* 
-  * An auxiliary function for Training 
-  * I have no idea how to make it more easier
-  * For now, We attach this function into Training trail for doing un-fold jobs
-  * 
-  * Some improvement ideas:
-  *   - Put all training trail into this file !!
-  *   - ...
-  */
-  def unfold(expr: Expr, times: Int): Seq[Z3AST] = {
-    val unrollingBank = new UnrollingBank()
-    val newClauses = unrollingBank.scanForNewTemplates(expr)
-
-    val cl = for (c <- 0 until times) yield {
-      val toRelease = unrollingBank.getZ3BlockersToUnlock
-
-      val kk = for (id <- toRelease) yield {
-        unrollingBank.unlock(id)
-      }
-      kk.flatten
-    }
-
-    newClauses ++ cl.flatten
-  }
 
   def getNewSolver = new Solver {
     private val evaluator    = enclosing.evaluator
@@ -370,6 +346,9 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
     initZ3
 
     val solver = z3.mkSolver
+    
+    // a hook for lemma engine
+    // LemmaEngine.setZ3Solver(solver)
 
     private var varsInVC = Set[Identifier]()
 
@@ -415,6 +394,9 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
       //println(variablesOf(expression))
       varsInVC ++= variablesOf(expression)
 
+      // a hook for lemma engine
+      // LemmaEngine.setInput(expression)
+
       frameExpressions = (expression :: frameExpressions.head) :: frameExpressions.tail
 
       val newClauses = unrollingBank.scanForNewTemplates(expression)
@@ -457,42 +439,16 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
         }).toSet
       }
 
-      /* 
-       * Because z3 get timeout when we don't unrolling enough times, and when z3 timeout, every assertions gone way.
-       * So I use a trick to workaround this by pre-unrolling enough times for some special example, so I can focus on the
-       * main error of Leon
-       */
-      val times_of_preunrolling: Int = 0
-      var count = 0
-      reporter.debug("Pre-unrolling " + times_of_preunrolling + " times")
-      while (count < times_of_preunrolling) {
-              val toRelease = unrollingBank.getZ3BlockersToUnlock
-              // println("Release " + toRelease.toString)
-
-              for(id <- toRelease.sortWith(_.toString < _.toString)) {
-                val newClauses = unrollingBank.unlock(id)
-
-                for(ncl <- newClauses) {
-                  solver.assertCnstr(ncl)
-                }
-              }
-              count = count + 1
-      }
-
-      // z3.setAstPrintMode(Z3Context.AstPrintMode.Z3_PRINT_SMTLIB2_COMPLIANT)
       while(!foundDefinitiveAnswer && !interrupted) {
 
         //val blockingSetAsZ3 : Seq[Z3AST] = blockingSet.toSeq.map(toZ3Formula(_).get)
         // println("Blocking set : " + blockingSet)
 
-        //println(solver.getAssertions.toSeq.mkString("(assert ", ")\n(assert ", ")\n"))
-        //println(unrollingBank.z3CurrentZ3Blockers.mkString("(assert ",")\n(assert ",")\n"))
         reporter.debug(" - Running Z3 search...")
 
         reporter.debug("Searching in:\n"+solver.getAssertions.toSeq.mkString("(assert ", ")\n(assert ", ")\n"))
         reporter.debug("Unroll.  Assumptions:\n"+unrollingBank.z3CurrentZ3Blockers.mkString("(assert ",")\n(assert ",")\n"))
         reporter.debug("Userland Assumptions:\n"+assumptionsAsZ3.mkString("(assert ",")\n(assert ",")\n"))
-
 
         solver.push()
         val res = solver.checkAssumptions((assumptionsAsZ3 ++ unrollingBank.z3CurrentZ3Blockers) :_*)
@@ -503,15 +459,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
           case None =>
             // reporter.warning("Z3 doesn't know because: " + z3.getSearchFailure.message)
             reporter.warning("Z3 doesn't know because ??")
-
-            /* 
-             * In some cases Z3 returns unknown but also having a `suggested model`
-             * Anw, we're lucky sometimes ;-)
-             */
-            val (isValid, model) = validateModel(solver.getModel, entireFormula, varsInVC, silenceErrors = false)
-
-            if (isValid) foundAnswer(Some(true), model)
-            else foundAnswer(None)
+            foundAnswer(None)
 
           case Some(true) => // SAT
             // reporter.info("SAT")
@@ -592,16 +540,11 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
                 reporter.debug(" - Running search without blocked literals (w/o lucky test)")
               }
 
+              solver.push() // FIXME: remove when z3 bug is fixed
               /* We only use lemma when checking UNSAT */
-              solver.push()
-                // println(lemmaZ3ASTs.mkString("(assert ", ")\n(assert ", ")\n"))
-                //for (axiom <- lemmaZ3ASTs) {
-                //  solver.assertCnstr(axiom)
-                //}
-                solver.push() // FIXME: remove when z3 bug is fixed
-                  val res2 = solver.checkAssumptions(assumptionsAsZ3 : _*)
-                solver.pop()  // FIXME: remove when z3 bug is fixed
-              solver.pop()  // restore non using lemma state
+              for (lemma <- lemmas.getOrElse(Seq())) solver.assertCnstr(lemma)
+              val res2 = solver.checkAssumptions(assumptionsAsZ3 : _*)
+              solver.pop()  // FIXME: remove when z3 bug is fixed
 
               /*
               val qua = solver.getQuantifierInstances
