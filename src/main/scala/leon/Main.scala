@@ -199,7 +199,7 @@ object Main {
       } else if (settings.xlang) {
         xlang.XlangAnalysisPhase
       } else if (settings.verify) {
-        verification.AnalysisPhase
+        verification.NewAnalysisPhase
       } else {
         NoopPhase()
       }
