@@ -17,7 +17,7 @@ object Main {
       xlang.XlangAnalysisPhase,
       synthesis.SynthesisPhase,
       termination.TerminationPhase,
-      verification.AnalysisPhase
+      verification.NewAnalysisPhase
     )
   }
 
