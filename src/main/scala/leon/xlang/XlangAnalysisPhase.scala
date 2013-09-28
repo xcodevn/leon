@@ -50,7 +50,7 @@ object XlangAnalysisPhase extends LeonPhase[Program, VerificationReport] {
       case opt => opt
     }
 
-    val vr = AnalysisPhase.run(ctx.copy(options = newOptions))(pgm4)
+    val vr = NewAnalysisPhase.run(ctx.copy(options = newOptions))(pgm4)
     completeVerificationReport(vr, functionWasLoop _)
   }
 

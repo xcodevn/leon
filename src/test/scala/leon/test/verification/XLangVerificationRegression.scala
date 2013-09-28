@@ -4,7 +4,7 @@ package leon
 package test
 package verification
 
-import leon.verification.{AnalysisPhase,VerificationReport}
+import leon.verification.{NewAnalysisPhase,VerificationReport}
 
 import java.io.File
 

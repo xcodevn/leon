@@ -4,7 +4,7 @@ package leon
 package test
 package solvers.lemmafilter
 
-import leon.verification.{AnalysisPhase,VerificationReport,VerificationCondition}
+import leon.verification.{NewAnalysisPhase,VerificationReport,VerificationCondition}
 
 import java.io.File
 import scala.io._
@@ -18,7 +18,7 @@ class NewTestFramework extends LeonTestSuite {
   private case class Output(report : VerificationReport, reporter : Reporter)
 
   private def mkPipeline : Pipeline[List[String],VerificationReport] =
-    leon.plugin.ExtractionPhase andThen leon.utils.SubtypingPhase andThen leon.verification.AnalysisPhase
+    leon.plugin.ExtractionPhase andThen leon.utils.SubtypingPhase andThen leon.verification.NewAnalysisPhase
 
   private def mkTest(file : File, leonOptions : Seq[LeonOption], forError: Boolean)(block: Output=>Unit) = {
     val fullName = file.getPath()

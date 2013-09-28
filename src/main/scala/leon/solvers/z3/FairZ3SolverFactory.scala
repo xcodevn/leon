@@ -24,26 +24,20 @@ import scala.collection.mutable.{Map => MutableMap}
 import scala.collection.mutable.{Set => MutableSet}
 import scala.collection.mutable.MutableList
 
-import leon.solvers.lemmafilter._
-
 class FairZ3SolverFactory(val context : LeonContext, val program: Program)
   extends AbstractZ3Solver
      with Z3ModelReconstruction
      with FairZ3Component
-     with Z3Lemmas
      with LeonComponent {
 
   enclosing =>
 
-  val (feelingLucky, checkModels, useCodeGen, evalGroundApps, unrollUnsatCores, useLemmas, filterName, num_lemmas) = locally {
+  val (feelingLucky, checkModels, useCodeGen, evalGroundApps, unrollUnsatCores) = locally {
     var lucky            = false
     var check            = false
     var codegen          = false
     var evalground       = false
     var unrollUnsatCores = false
-    var lemmas           = false
-    var filter: String   = "NOTUSED"
-    var num_lemmas: Int      = 2
 
     for(opt <- context.options) opt match {
       case LeonFlagOption("checkmodels", v)        => check            = v
@@ -51,14 +45,11 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
       case LeonFlagOption("codegen", v)            => codegen          = v
       case LeonFlagOption("evalground", v)         => evalground       = v
       case LeonFlagOption("fairz3:unrollcores", v) => unrollUnsatCores = v
-      case LeonFlagOption("lemmas", v)             => lemmas           = v
-      case LeonValueOption("filter", v)            => { filter = v; if (v=="MaSh" || v == "MePo") lemmas = true }
-      case LeonValueOption("num-lemmas", v)        => num_lemmas = v.toInt
         
       case _ =>
     }
 
-    (lucky, check, codegen, evalground, unrollUnsatCores, lemmas, filter, num_lemmas)
+    (lucky, check, codegen, evalground, unrollUnsatCores)
   }
 
   private val evaluator : Evaluator = if(useCodeGen) {
@@ -78,10 +69,6 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
   // This is fixed.
   protected[leon] val z3cfg = new Z3Config(
     "MODEL" -> true,
-    "TRACE" -> true,
-    "TRACE_FILE_NAME" -> "\"hi.txt\"",
-    "MACRO_FINDER" -> false,
-    // "SOFT_TIMEOUT" -> 2000,                
     "MBQI" -> false,                
     "TYPE_CHECK" -> true,
     "WELL_SORTED_CHECK" -> true
@@ -102,7 +89,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
   private var reverseFunctionMap: Map[Z3FuncDecl, FunDef] = Map.empty
   private var axiomatizedFunctions : Set[FunDef] = Set.empty
   
-  var curExpr: Option[Expr] = None
+  // var curExpr: Option[Expr] = None
 
   protected[leon] def prepareFunctions: Unit = {
     functionMap = Map.empty
@@ -347,54 +334,19 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
     }
   }
 
-  /* 
-  * An auxiliary function for Training 
-  * I have no idea how to make it more easier
-  * For now, We attach this function into Training trail for doing un-fold jobs
-  * 
-  * Some improvement ideas:
-  *   - Put all training trail into this file !!
-  *   - ...
-  */
-  def unfold(expr: Expr, times: Int): Seq[Z3AST] = {
-    val unrollingBank = new UnrollingBank()
-    val newClauses = unrollingBank.scanForNewTemplates(expr)
-
-    val cl = for (c <- 0 until times) yield {
-      val toRelease = unrollingBank.getZ3BlockersToUnlock
-
-      val kk = for (id <- toRelease) yield {
-        unrollingBank.unlock(id)
-      }
-      kk.flatten
-    }
-
-    newClauses ++ cl.flatten
-  }
 
   def getNewSolver = new Solver {
     private val evaluator    = enclosing.evaluator
     private val feelingLucky = enclosing.feelingLucky
     private val checkModels  = enclosing.checkModels
     private val useCodeGen   = enclosing.useCodeGen
-    private val useLemmas    = enclosing.useLemmas
-    // private val doTraining   = enclosing.doTraining
 
     initZ3
 
     val solver = z3.mkSolver
-
-
-    /*
-     * We don't need these lines anymore (hope so)
-     *
-     
-    if (doTraining && !isTrained) {
-      reporter.info("Training Leon system by using knowledge from the user (@depend annotation)")      
-      train(unfold) // call our train function, a wrapper I mean so!
-      isTrained = true
-    }
-    */
+    
+    // a hook for lemma engine
+    // LemmaEngine.setZ3Solver(solver)
 
     private var varsInVC = Set[Identifier]()
 
@@ -434,50 +386,14 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
     var definitiveAnswer : Option[Boolean] = None
     var definitiveModel  : Map[Identifier,Expr] = Map.empty
     var definitiveCore   : Set[Expr] = Set.empty
-    var addLemmaYet: Boolean = false
 
     def assertCnstr(expression: Expr) {
 
-      /* Only use filter in the first time of calling this function */
-      if(useLemmas && ! addLemmaYet) {
-        addLemmaYet = true
-        lemmaZ3ASTs.clear()
-        filterName match {
-          case "MaSh" =>
-            val MaShfilter = new MaShFilter(context, program)
-            val curFun = program.definedFunctions.filter(f=>f.isReach).sortWith( (fd1,fd2) => fd1 < fd2 ).reverse.head
-            val funs = curFun +: program.definedFunctions.filter(f => f < curFun)
-            if (curFun.annotations.contains("depend")) {
-              curFun.dependencies match { case Some(deps) => prepareLemmas(solver, funs.filter(f => deps.contains(f.id.name.toString))); case _ => }
-            } else {
-              val m = funs.tail.filter(f => f.annotations.contains("lemma")).map( f => (f, Error(":-)"))).toMap
-              if (m.size > 0)
-                prepareLemmas(solver, MaShfilter.filter(expression, m, num_lemmas) )
-            }
-            MaShfilter.fairZ3.free() // go away z3 ;)
-
-          case "MePo" =>
-            val MePofilter = new MePoFilter(context, program)
-            val curFun = program.definedFunctions.filter(f=>f.isReach).sortWith( (fd1,fd2) => fd1 < fd2 ).reverse.head
-            val funs = curFun +: program.definedFunctions.filter(f => f < curFun)
-            if (curFun.annotations.contains("depend")) {
-              curFun.dependencies match { case Some(deps) => prepareLemmas(solver, funs.filter(f => deps.contains(f.id.name.toString))); case _ => }
-            } else {
-              val m = funs.tail.filter(f => f.annotations.contains("lemma")).map( f => (f, MePofilter.genVC(f))).toMap
-              if (m.size > 0) {
-                val res = MePofilter.filter(expression, m, num_lemmas)
-                prepareLemmas(solver, res)
-              }
-            }
-            MePofilter.fairZ3.free() // I don't need you anymore
-
-          case _ =>
-            prepareLemmas(solver, program.definedFunctions.filter(f=> f.annotations.contains("lemma"))) /* As before I come here ;) */
-        }
-      }
-
       //println(variablesOf(expression))
       varsInVC ++= variablesOf(expression)
+
+      // a hook for lemma engine
+      // LemmaEngine.setInput(expression)
 
       frameExpressions = (expression :: frameExpressions.head) :: frameExpressions.tail
 
@@ -521,43 +437,17 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
         }).toSet
       }
 
-      /* 
-       * Because z3 get timeout when we don't unrolling enough times, and when z3 timeout, every assertions gone way.
-       * So I use a trick to workaround this by pre-unrolling enough times for some special example, so I can focus on the
-       * main error of Leon
-       */
-      val times_of_preunrolling: Int = 1
-      var count = 0
-      reporter.info("Pre-unrolling " + times_of_preunrolling + " times")
-      while (count < times_of_preunrolling) {
-              val toRelease = unrollingBank.getZ3BlockersToUnlock
-              // println("Release " + toRelease.toString)
-
-              for(id <- toRelease.sortWith(_.toString < _.toString)) {
-                val newClauses = unrollingBank.unlock(id)
-
-                for(ncl <- newClauses) {
-                  solver.assertCnstr(ncl)
-                }
-              }
-              count = count + 1
-      }
-
-      var flag = true
-      // z3.setAstPrintMode(Z3Context.AstPrintMode.Z3_PRINT_SMTLIB2_COMPLIANT)
       while(!foundDefinitiveAnswer && !interrupted) {
 
         //val blockingSetAsZ3 : Seq[Z3AST] = blockingSet.toSeq.map(toZ3Formula(_).get)
         // println("Blocking set : " + blockingSet)
 
-        // reporter.info(solver.getAssertions.toSeq.mkString("(assert ", ")\n(assert ", ")\n"))
-        // reporter.info(unrollingBank.z3CurrentZ3Blockers.mkString("(assert ",")\n(assert ",")\n"))
+        reporter.debug(" - Running Z3 search...")
 
         reporter.debug(" - Running Z3 search...")
         reporter.debug("Searching in:\n"+solver.getAssertions.toSeq.mkString("(assert ", ")\n(assert ", ")\n"))
         reporter.debug("Unroll.  Assumptions:\n"+unrollingBank.z3CurrentZ3Blockers.mkString("(assert ",")\n(assert ",")\n"))
         reporter.debug("Userland Assumptions:\n"+assumptionsAsZ3.mkString("(assert ",")\n(assert ",")\n"))
-
 
         solver.push()
         val res = solver.checkAssumptions((assumptionsAsZ3 ++ unrollingBank.z3CurrentZ3Blockers) :_*)
@@ -568,11 +458,6 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
           case None =>
             // reporter.warning("Z3 doesn't know because: " + z3.getSearchFailure.message)
             reporter.warning("Z3 doesn't know because ??")
-
-            /* 
-             * In some cases Z3 returns unknown but also having a `suggested model`
-             * Anw, we're lucky sometimes ;-)
-             */
             foundAnswer(None)
 
           case Some(true) => // SAT
@@ -654,16 +539,11 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
                 reporter.debug(" - Running search without blocked literals (w/o lucky test)")
               }
 
+              solver.push() // FIXME: remove when z3 bug is fixed
               /* We only use lemma when checking UNSAT */
-              solver.push()
-                reporter.info(lemmaZ3ASTs.mkString("(assert ", ")\n(assert ", ")\n"))
-                for (axiom <- lemmaZ3ASTs) {
-                  solver.assertCnstr(axiom)
-                }
-                solver.push() // FIXME: remove when z3 bug is fixed
-                  val res2 = solver.checkAssumptions(assumptionsAsZ3 : _*)
-                solver.pop()  // FIXME: remove when z3 bug is fixed
-              solver.pop()  // restore non using lemma state
+              for (lemma <- lemmas.getOrElse(Seq())) solver.assertCnstr(lemma)
+              val res2 = solver.checkAssumptions(assumptionsAsZ3 : _*)
+              solver.pop()  // FIXME: remove when z3 bug is fixed
 
               /*
               val qua = solver.getQuantifierInstances
@@ -680,8 +560,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
               }
               */
 
-             reporter.info("Real return result: " + res2.toString)
-              val adjustedForUnknowns = if(false || !useLemmas) res2 else res2 match {
+              val adjustedForUnknowns = if(false) res2 else res2 match {
                 case Some(false) => Some(false)
                 case Some(true)  => Some(true) // not likely to happen, ever.
                 case None        => Some(true)
