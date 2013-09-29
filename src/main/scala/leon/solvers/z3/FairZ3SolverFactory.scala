@@ -69,6 +69,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
   // This is fixed.
   protected[leon] val z3cfg = new Z3Config(
     "MODEL" -> true,
+    "SOFT_TIMEOUT" -> 2900,
     "MBQI" -> false,                
     "TYPE_CHECK" -> true,
     "WELL_SORTED_CHECK" -> true
