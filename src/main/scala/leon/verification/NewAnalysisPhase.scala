@@ -47,7 +47,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
         reporter.debug(simplifyLets(vc))
         val svc = simplifyLets(vc)
 
-        def rec_simp(ex: Expr, count: Int = 10): Expr = {
+        def rec_simp(ex: Expr, count: Int = 5): Expr = {
           if (count == 0) ex else {
             val rl = cap match {
               case Some((program,ctx)) =>
@@ -58,7 +58,9 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
 
               case _ => ex
             }
-            if (rl.toString != ex.toString) rec_simp(rl, count - 1)
+            if (rl.toString != ex.toString) {
+              rec_simp(rl, count - 1)
+            }
             else ex
           }
         }

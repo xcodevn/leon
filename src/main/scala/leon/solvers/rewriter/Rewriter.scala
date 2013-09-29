@@ -11,6 +11,7 @@ import purescala.TypeTrees._
 import purescala.Trees._
 import purescala.Extractors._
 import collection.mutable.MutableList
+import collection.mutable.{Map => MutableMap}
 
 abstract class SIMPRESULT
 case class SIMP_SUCCESS() extends SIMPRESULT
@@ -52,7 +53,7 @@ abstract class Rewriter {
   }
 
   def clearRules = rules.clear
-  def instantiate(expr: Expr, m: Map[Identifier, Expr]): Expr = expr match {
+  def instantiate(expr: Expr, m: MutableMap[Identifier, Expr]): Expr = expr match {
     case Variable(id) if m.contains(id) => {
       // println("Our map " + m + " map for id: "  + id + " to " + m(id))
       m(id)
@@ -99,7 +100,17 @@ object TrivialRewriter2 extends Rewriter {
   }
 }
 object SimpleRewriter extends Rewriter {
-  def exprMatch(pattern: Expr, ex: Expr): (Boolean, Map[Identifier,Expr]) = {
+  def exprMatch(pattern: Expr, ex: Expr, map: MutableMap[Identifier, Expr]): Boolean = {
+    def checkAndAdd(e: (Identifier,Expr)): Boolean = {
+      if (map.contains(e._1)) {
+        if (map(e._1).toString == e._2.toString)
+          true
+        else false
+      } else {
+        map += (e._1 -> e._2)
+        true
+      }
+    }
 
     // println("Match \n" + pattern.toString  + " \n with \n" + ex.toString+ "\n===============\n")
     // println("Match type \n" + pattern.getType.toString  + " \n with type \n" + ex.getType.toString + "\n===============\n")
@@ -113,15 +124,18 @@ object SimpleRewriter extends Rewriter {
     if (pattern.getType == typ) {
       if (pattern.getClass != ex.getClass) {
         pattern match {
-          case Variable(id) => (true, Map(id -> ex) )
-          case _            => (false, Map())
+          case Variable(id) => 
+            checkAndAdd( (id,ex) )
+          case _            => false
         }
       } else {
 
-        def checkChilds(args: Seq[Expr], args1: Seq[Expr]): (Boolean, Map[Identifier, Expr]) = {
-          val rl = for ((e1, e2) <- (args zip args1)) yield exprMatch(e1,e2)
-          (rl.map(_._1).foldLeft(true)((cur, va) => cur && va), 
-            rl.map(_._2).foldLeft(Map[Identifier,Expr]())((cur, va) => cur ++ va))
+        def checkChilds(args: Seq[Expr], args1: Seq[Expr]): Boolean = {
+          for ((e1, e2) <- (args zip args1)) {
+            if (!exprMatch(e1,e2, map)) 
+              return false
+          }
+          true
         }
 
         pattern match {
@@ -129,43 +143,43 @@ object SimpleRewriter extends Rewriter {
             val FunctionInvocation(fd1, args1) = ex
             if (fd == fd1) {
               checkChilds(args, args1)
-            } else (false, Map())
+            } else false
           }
 
           case UnaryOperator(t, recons) => {
             val UnaryOperator(t1,recons1) = ex
-            exprMatch(t,t1)
+            exprMatch(t,t1, map)
           }
           case BinaryOperator(t, y, recons) => {
             val BinaryOperator(t1, y1, recons1) = ex
-            val (r1, m1) = exprMatch(t,t1)
+            val r1 = exprMatch(t,t1, map)
             if (r1) {
-              val (r2, m2) = exprMatch(y,y1)
-              (r1 && r2, m1 ++ m2)
-            } else (false, Map())
+              val r2 = exprMatch(y,y1, map)
+              r1 && r2
+            } else false
           }
           case n @ NAryOperator(args, recons) => {
             val NAryOperator(args1, recons1) = ex
             if (args.size == args1.size) {
               checkChilds(args, args1)
-            } else (false, Map())
+            } else false
           }
 
           case Variable(id) => {
             val Variable(id1) = ex
-            (true, Map (id -> ex))
+            checkAndAdd((id,ex))
           }
 
-          case _ => (pattern == ex, Map())
+          case _ => pattern == ex
         }
       }
-    } else (false, Map())
+    } else false
 
   }
 
   def simplify(sf: SolverFactory[Solver])(old_expr: Expr, proofContext: Seq[Expr]): (Expr, SIMPRESULT) = {
     // println("Simplify: " + expr.toString)
-    val solver = SimpleSolverAPI(sf.withTimeout(100L))
+    val solver = SimpleSolverAPI(sf.withTimeout(10L))
     val (expr,rl) = old_expr match {
       case UnaryOperator(t, recons) => {
         val (ex, rl) = simplify(sf)(t, proofContext)
@@ -187,7 +201,9 @@ object SimpleRewriter extends Rewriter {
 
     for (RewriteRule(rname, conds, lhs, rhs, w) <- rules.sortWith(_.weight > _.weight)) {
       val varsInLHS = variablesOf(lhs)
-      val (isMatched, m) = exprMatch(lhs, expr)
+
+      val m: MutableMap[Identifier, Expr] = MutableMap.empty
+      val isMatched = exprMatch(lhs, expr, m)
       if (isMatched) {
         // println ("Matched " + lhs + " with " + expr + " \n Map is " + m)
         def isSubSimplify(expr: Expr): Boolean = {
@@ -211,7 +227,7 @@ object SimpleRewriter extends Rewriter {
 
         val realConds = conds.filter(!isSubSimplify(_)).map(cond => instantiate(cond, m))
         // println("Real conds : " + realConds)
-        // println("check SAT " + And(Seq(Not(And(realConds))) ++ proofContext))
+        println("check SAT " + And(Seq(Not(And(realConds))) ++ proofContext))
         solver.solveSAT(And(Seq(Not(And(realConds))) ++ proofContext)) match {
           case (Some(false),_)  =>
             val newM = m ++ conds.filter(isSubSimplify(_)).foldLeft (Map[Identifier,Expr]()) ( (curVal, cond) =>{
