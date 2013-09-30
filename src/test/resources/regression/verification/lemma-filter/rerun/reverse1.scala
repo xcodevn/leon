@@ -19,8 +19,10 @@ object Reverse {
   @lemma @induct @simp
   def appnil_lemma(l: List) = { app(l, Nil() ) == l } holds
 
-  @lemma @induct @simp
-  def app_assoc_lemma(l1: List, l2: List, l3: List) = { app(l1, app(l2, l3)) == app( app(l1, l2), l3) } holds
+  @induct @simp @lemma
+  def app_assoc_lemma(l1: List, l2: List, l3: List) = { 
+     app(l1, app(l2, l3)) == app( app(l1, l2), l3) 
+    } holds
 
   @lemma @induct @simp
   def rev_app_lemma(l1: List, l2: List) = {

@@ -228,7 +228,11 @@ object SimpleRewriter extends Rewriter {
         val realConds = conds.filter(!isSubSimplify(_)).map(cond => instantiate(cond, m))
         // println("Real conds : " + realConds)
         // println("check SAT " + And(Seq(Not(And(realConds))) ++ proofContext))
-        solver.solveSAT(And(Seq(Not(And(realConds))) ++ proofContext)) match {
+        val rl = try {
+          solver.solveSAT(And(Seq(Not(And(realConds))) ++ proofContext)) 
+        } catch { case _ : Throwable => (Some(true), true) }
+
+        rl match {
           case (Some(false),_)  =>
             val newM = m ++ conds.filter(isSubSimplify(_)).foldLeft (Map[Identifier,Expr]()) ( (curVal, cond) =>{
               val RewriteRule(rname1, conds1, lhs1, rhs1, w) = toRewriteRule(cond)
