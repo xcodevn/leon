@@ -51,7 +51,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
           if (count == 0) ex else {
             val rl = cap match {
               case Some((program,ctx)) =>
-                val rwSolver = new FairZ3SolverFactory(ctx, program)
+                val rwSolver = new UninterpretedZ3SolverFactory(ctx, program)
                 val out = SimpleRewriter.simplify(rwSolver)(ex, Seq())
                 rwSolver.free()
                 out._1
