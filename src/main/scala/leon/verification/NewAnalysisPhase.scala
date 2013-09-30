@@ -203,7 +203,8 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
     SimpleRewriter.clearRules
     SimpleRewriter.setReporter(reporter)
     val ctx_wo_filter = LeonContext(new SilentReporter, ctx.interruptManager, ctx.settings, Seq(), Seq(), ctx.timers)
-    if (!(isFlagTurnOn("codegen", ctx) || isFlagTurnOn("feelinglucky", ctx) || isFlagTurnOn("evalground", ctx))) {
+    val isNotSimp = (isFlagTurnOn("codegen", ctx) || isFlagTurnOn("feelinglucky", ctx) || isFlagTurnOn("evalground", ctx))
+    if  (!isNotSimp) {
 
       // for(funDef <- program.definedFunctions.toList.sortWith((fd1, fd2) => fd1 < fd2)) {
         // println(funDef)
@@ -237,7 +238,10 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
     val report = if(solvers.size >= 1) {
       reporter.debug("Running verification condition generation...")
       val vcs = generateVerificationConditions(reporter, program, functionsToAnalyse)
-      checkVerificationConditions(vctx, vcs, Option((program,ctx_wo_filter)))
+      if (!isNotSimp)
+        checkVerificationConditions(vctx, vcs, Option((program,ctx_wo_filter)))
+      else
+        checkVerificationConditions(vctx, vcs, None)
     } else {
       reporter.warning("No solver specified. Cannot test verification conditions.")
       VerificationReport.emptyReport
