@@ -70,6 +70,7 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
   protected[leon] val z3cfg = new Z3Config(
     "MODEL" -> true,
     "MBQI" -> false,                
+    "SOFT_TIMEOUT" -> 2900,                
     "TYPE_CHECK" -> true,
     "WELL_SORTED_CHECK" -> true
   )
@@ -441,8 +442,6 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
 
         //val blockingSetAsZ3 : Seq[Z3AST] = blockingSet.toSeq.map(toZ3Formula(_).get)
         // println("Blocking set : " + blockingSet)
-
-        reporter.debug(" - Running Z3 search...")
 
         reporter.debug(" - Running Z3 search...")
         reporter.debug("Searching in:\n"+solver.getAssertions.toSeq.mkString("(assert ", ")\n(assert ", ")\n"))

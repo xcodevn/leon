@@ -1,0 +1,22 @@
+filter:MePo training:false timeout:30
+sum_lemma                 postcond.           valid               Z3-f+to
+plus_zero_lemma           postcond.           valid    induction  Z3-f+to
+plus_zero_lemma           postcond.           valid    induction  Z3-f+to
+sub_zero_lemma            postcond.           valid    induction  Z3-f+to
+sub_zero_lemma            postcond.           valid    induction  Z3-f+to
+assoc_plus_lemma          postcond.           valid    induction  Z3-f+to
+assoc_plus_lemma          postcond.           valid    induction  Z3-f+to
+zero_sub_lemma            postcond.           valid               Z3-f+to
+one                       postcond.           valid               Z3-f+to
+plusOne_lemma1            postcond.           valid    induction  Z3-f+to
+plusOne_lemma1            postcond.           valid    induction  Z3-f+to
+plusOne_lemma2            postcond.           valid    induction  Z3-f+to
+plusOne_lemma2            postcond.           valid    induction  Z3-f+to
+plus_lemma                postcond.           valid    induction  Z3-f+to
+plus_lemma                postcond.           valid    induction  Z3-f+to
+swap_lemma                postcond.           valid    induction  Z3-f+to
+swap_lemma                postcond.           valid    induction  Z3-f+to
+three_odd_lemma1          postcond.           invalid             Z3-f+to
+three_odd_lemma2          postcond.           valid               Z3-f+to
+sumOdd_lemma              postcond.           unknown  induction         
+sumOdd_lemma              postcond.           valid    induction  Z3-f+to

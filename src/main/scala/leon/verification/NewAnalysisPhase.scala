@@ -118,6 +118,14 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
           case _ =>
         }
       }
+
+      /* Now add lemma as a rewrite rule when we proved it right */
+      cap match {
+        case Some((program, ctx)) =>
+          val rus = Rules.createFunctionRewriteRules(funDef, program)
+          for (ru <- rus) SimpleRewriter.addRewriteRule(ru)
+        case _ =>
+      }
     }
 
     val report = new VerificationReport(vcs)
@@ -197,11 +205,11 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
     val ctx_wo_filter = LeonContext(new SilentReporter, ctx.interruptManager, ctx.settings, Seq(), Seq(), ctx.timers)
     if (!(isFlagTurnOn("codegen", ctx) || isFlagTurnOn("feelinglucky", ctx) || isFlagTurnOn("evalground", ctx))) {
 
-      for(funDef <- program.definedFunctions.toList.sortWith((fd1, fd2) => fd1 < fd2)) {
+      // for(funDef <- program.definedFunctions.toList.sortWith((fd1, fd2) => fd1 < fd2)) {
         // println(funDef)
-        val rus = Rules.createFunctionRewriteRules(funDef, program)
-        for (ru <- rus) SimpleRewriter.addRewriteRule(ru)
-      }
+        // val rus = Rules.createFunctionRewriteRules(funDef, program)
+        // for (ru <- rus) SimpleRewriter.addRewriteRule(ru)
+      // }
       Rules.addDefaultRules(SimpleRewriter)
 
       reporter.info(SimpleRewriter.pp_rules)

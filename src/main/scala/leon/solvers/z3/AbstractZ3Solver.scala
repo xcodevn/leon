@@ -273,7 +273,7 @@ trait AbstractZ3Solver extends SolverFactory[Solver] {
     // everything should be alright now...
     val resultingZ3Info = z3.mkADTSorts(defs)
     z3.setAstPrintMode(Z3Context.AstPrintMode.Z3_PRINT_SMTLIB2_COMPLIANT)
-    reporter.info("ADTSORT " + resultingZ3Info)
+    reporter.debug("ADTSORT " + resultingZ3Info)
 
     adtSorts = Map.empty
     adtTesters = Map.empty

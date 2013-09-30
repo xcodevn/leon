@@ -31,68 +31,47 @@ object Nat {
   } holds
 
 
-  @lemma
-  @induct
-  @depend()
+  @lemma @induct
   def plus_zero_lemma(a: Nat): Boolean = {
     plus(a, Zero()) == a
   } holds
 
-  @lemma
-  @induct
-  @depend()
+  @lemma @induct
   def sub_zero_lemma(a: Nat): Boolean = {
     sub(a, Zero()) == a
   } holds
 
-  @lemma
-  @induct
-  @depend()
+  @lemma @induct
   def assoc_plus_lemma(a: Nat, b: Nat, c: Nat): Boolean = {
     plus(a, plus(b, c)) == plus(plus(a, b), c)
   } holds
   
-  @depend()
   def zero_sub_lemma(a: Nat): Boolean = {
     sub(Zero(), a) == a
   } holds
 
   def one() = Succ(Zero())
 
-  @lemma
-  @induct
-  @depend()
+  @lemma @induct
   def plusOne_lemma1(a: Nat): Boolean = {
     plus(one(), a) == Succ(a)
   } holds
 
-  @lemma
-  @induct
-  @depend()
+  @lemma @induct
   def plusOne_lemma2(a: Nat): Boolean = {
     plus(a, one()) == Succ(a)
   } holds
 
-  @lemma
-  @induct
-  @depend()
+  @lemma @induct
   def plus_lemma(a: Nat, b: Nat, c: Nat): Boolean = {
     require (a == b)
     plus(a, c) == plus(b, c)
   } holds
-
-
-  @depend("plusOne_lemma2", "assoc_plus_lemma", "plus_zero_lemma")
-  def swap_plus_lemma(a: Nat, b: Nat): Boolean =  {
-    a match {
-      case Zero()   => true
-      case Succ(a1) => swap_plus_lemma(a1, b) && plus(a, b) == plus(b, a)
-                       // plus(b, Succ(a1)) == plus(b, plus(one(), a1)) &&
-                       // plus(b, plus(one(), a1)) == plus( plus(b, one()), a1 ) &&
-                       // plus(b, one()) == Succ(b) 
-                       // plus(Succ(b), a1 ) == Succ(plus(b, a1))
-    }
-  } ensuring { res => res && plus(a, b) == plus(b, a) }
+  
+  @induct
+  def swap_lemma(a: Nat, b: Nat): Boolean = {
+    plus(a, b) == plus(b, a)
+  } holds
 
   def isOdd(n: Nat): Boolean = n match {
     case Zero()      => false
@@ -108,10 +87,7 @@ object Nat {
   @induct
   def sumOdd_lemma(n1: Nat, n2: Nat): Boolean = {
     require(isOdd(n1) && isOdd(n2))
-    n1 match {
-      case Zero() => true // never happen
-      case Succ(n11) => true
-    }
+    isEven(plus(n1, n2))
   } holds
 
 }
