@@ -589,7 +589,7 @@ trait AbstractZ3Solver extends SolverFactory[Solver] {
       z3IdToExpr ++= ( z3Vars map ( (p) => { val (a,b) = p ; ( b -> Variable(a) )  } ))
       res
     } catch {
-      case e: CantTranslateException => println(e); None
+      case e: CantTranslateException => None
     }
   }
 

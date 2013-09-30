@@ -219,7 +219,7 @@ object SimpleRewriter extends Rewriter {
           case Implies(And(conds), Equals(lhs, rhs @ Variable(id))) if !varsInLHS.contains(id) => RewriteRule("somename", conds, lhs, rhs,0)
           case Implies(cond, Equals(lhs, rhs @ Variable(id))) if !varsInLHS.contains(id) => RewriteRule("somename", Seq(cond), lhs, rhs, 0)
           case _ => {
-            println(expr)
+            // println(expr)
             throw new Throwable("We don't want this case!")
 
           }
