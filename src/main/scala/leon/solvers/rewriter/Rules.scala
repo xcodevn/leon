@@ -117,7 +117,8 @@ object Rules {
             ex match {
               case IfExpr(con, ex1, ex2) => {
                 val rn = fn + "_simp" + c.toString
-                RewriteRule(rn, con +: conds, fi, ex1, 5) +: travelMatch(ex2, c+1, Not(con) +: conds)
+                val conn  = convert2Pattern(con)
+                RewriteRule(rn, conn +: conds, fi, ex1, 5) +: travelMatch(ex2, c+1, Not(conn) +: conds)
               }
               case _ => Seq( RewriteRule(fn + "_simp" + c.toString, conds, fi, ex, 5) )
             } 
@@ -137,7 +138,7 @@ object Rules {
       val s1 = if(fd.annotations.contains("simp")) {
         // println(fd)
         val precond = fd.precondition match {
-          case Some(pre) => Seq(pre)
+          case Some(pre) => Seq(convert2Pattern(pre))
           case _         => Seq()
         }
 
