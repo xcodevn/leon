@@ -28,6 +28,19 @@ case class RewriteRule (val name: String, val conds: Seq[Expr], val lhs: Expr, v
 abstract class Rewriter {
   // This function will return a subset of lemmas which are really necessary for proof of `conjecture`
 
+  private var stack : List[MutableList[RewriteRule]] = List(MutableList())
+
+  def push() = {
+    stack = (MutableList() ++ rules) :: stack 
+    reporter.debug("Rewriter push()")
+  }
+
+  def pop() = {
+    stack = stack.drop(1)
+    reporter.debug("Rewriter pop(). Current rules")
+    // pp_rules
+  }
+
   def createPattern(lhs: Expr, rhs: Expr) = {
     // FIXME: do it later please 
   }
@@ -54,7 +67,7 @@ abstract class Rewriter {
 
   def clearRules = rules.clear
   def instantiate(expr: Expr, m: MutableMap[Identifier, Expr]): Expr = expr match {
-    case Variable(id) if m.contains(id) => {
+    case RewriteVariable(id) if m.contains(id) => {
       // println("Our map " + m + " map for id: "  + id + " to " + m(id))
       m(id)
     }
@@ -79,9 +92,11 @@ abstract class Rewriter {
     case t @ _ => t
 
   }
-  protected val rules : MutableList[RewriteRule] = new MutableList[RewriteRule]
+  protected def rules = stack.head
   def resetRules = rules.clear
   def addRewriteRule(rule: RewriteRule) = {
+    reporter.debug("Adding rewrite rule: ")
+    reporter.debug("Name: %s\nConds: %s\nLHS: %s\nRHS: %s".format(rule.name, rule.conds.toString, rule.lhs.toString, rule.rhs.toString))
     rules += rule
   }
 
@@ -114,6 +129,7 @@ object SimpleRewriter extends Rewriter {
 
     // println("Match \n" + pattern.toString  + " \n with \n" + ex.toString+ "\n===============\n")
     // println("Match type \n" + pattern.getType.toString  + " \n with type \n" + ex.getType.toString + "\n===============\n")
+    // println("Match class \n" + pattern.getClass.toString  + " \n with type \n" + ex.getClass.toString + "\n===============\n")
     val t = leastUpperBound(pattern.getType, ex.getType)
     // println(t)
     val typ = t match {
@@ -121,10 +137,11 @@ object SimpleRewriter extends Rewriter {
       case _        => Untyped
     }
 
+
     if (pattern.getType == typ) {
       if (pattern.getClass != ex.getClass) {
         pattern match {
-          case Variable(id) => 
+          case RewriteVariable(id) => 
             checkAndAdd( (id,ex) )
           case _            => false
         }
@@ -139,6 +156,10 @@ object SimpleRewriter extends Rewriter {
         }
 
         pattern match {
+          case CaseClassSelector(ccd, cc, cl) =>
+            val CaseClassSelector(ccd1, cc1, cl1) = ex
+            ccd == ccd1 && exprMatch(cc, cc1, map) && cl == cl1
+
           case FunctionInvocation(fd, args) => {
             val FunctionInvocation(fd1, args1) = ex
             if (fd == fd1) {
@@ -165,10 +186,12 @@ object SimpleRewriter extends Rewriter {
             } else false
           }
 
+          /* we don't need this when we change for using RewriteVarialbe instead of Variable as before
           case Variable(id) => {
             val Variable(id1) = ex
             checkAndAdd((id,ex))
-          }
+          } 
+          */
 
           case _ => pattern == ex
         }
@@ -199,8 +222,27 @@ object SimpleRewriter extends Rewriter {
       case _ => (old_expr, SIMP_SUCCESS())
     }
 
-    for (RewriteRule(rname, conds, lhs, rhs, w) <- rules.sortWith(_.weight > _.weight)) {
-      val varsInLHS = variablesOf(lhs)
+    def rewriteVariablesOf(e: Expr): Set[Identifier] = e match {
+      case RewriteVariable(id)  => Set(id)
+
+      case UnaryOperator(t, recons) => {
+        rewriteVariablesOf(t)
+      }
+
+      case BinaryOperator(t, y, recons) => {
+        rewriteVariablesOf(t) ++ rewriteVariablesOf(y)
+      }
+
+      case n @ NAryOperator(args, recons) => {
+
+        args.foldLeft(Set[Identifier]()) ( (curSet, elem) => curSet ++ rewriteVariablesOf(elem) )
+      }
+
+      case t @ _ => Set()
+    }
+
+    for ( rule @ RewriteRule(rname, conds, lhs, rhs, w) <- rules.sortWith(_.weight > _.weight)) {
+      val varsInLHS = rewriteVariablesOf(lhs)
 
       val m: MutableMap[Identifier, Expr] = MutableMap.empty
       val isMatched = exprMatch(lhs, expr, m)
@@ -208,16 +250,16 @@ object SimpleRewriter extends Rewriter {
         // println ("Matched " + lhs + " with " + expr + " \n Map is " + m)
         def isSubSimplify(expr: Expr): Boolean = {
           expr match {
-          case Equals(_, v @ Variable(id)) if !varsInLHS.contains(id) => true
-          case Implies(_, Equals(_, v @ Variable(id))) if !varsInLHS.contains(id) => true
+          case Equals(_, v @ RewriteVariable(id))  if !varsInLHS.contains(id) => true
+          case Implies(_, Equals(_, v @ RewriteVariable(id)))  if !varsInLHS.contains(id) => true
           case _ => false
         }
         }
 
         def toRewriteRule(expr: Expr): RewriteRule = expr match {
-          case Equals(lhs, rhs @ Variable(id)) if !varsInLHS.contains(id) => RewriteRule("somename", Seq(), lhs, rhs,0)
-          case Implies(And(conds), Equals(lhs, rhs @ Variable(id))) if !varsInLHS.contains(id) => RewriteRule("somename", conds, lhs, rhs,0)
-          case Implies(cond, Equals(lhs, rhs @ Variable(id))) if !varsInLHS.contains(id) => RewriteRule("somename", Seq(cond), lhs, rhs, 0)
+          case Equals(lhs, rhs @ RewriteVariable(id)) if !varsInLHS.contains(id) => RewriteRule("somename", Seq(), lhs, rhs,0)
+          case Implies(And(conds), Equals(lhs, rhs @ RewriteVariable(id)))  if !varsInLHS.contains(id) => RewriteRule("somename", conds, lhs, rhs,0)
+          case Implies(cond, Equals(lhs, rhs @ RewriteVariable(id)))  if !varsInLHS.contains(id) => RewriteRule("somename", Seq(cond), lhs, rhs, 0)
           case _ => {
             // println(expr)
             throw new Throwable("We don't want this case!")
@@ -227,7 +269,7 @@ object SimpleRewriter extends Rewriter {
 
         val realConds = conds.filter(!isSubSimplify(_)).map(cond => instantiate(cond, m))
         // println("Real conds : " + realConds)
-        // println("check SAT " + And(Seq(Not(And(realConds))) ++ proofContext))
+        reporter.debug("check SAT " + And(Seq(Not(And(realConds))) ++ proofContext))
         val rl = try {
           solver.solveSAT(And(Seq(Not(And(realConds))) ++ proofContext)) 
         } catch { case _ : Throwable => (Some(true), true) }
@@ -236,13 +278,23 @@ object SimpleRewriter extends Rewriter {
           case (Some(false),_)  =>
             val newM = m ++ conds.filter(isSubSimplify(_)).foldLeft (Map[Identifier,Expr]()) ( (curVal, cond) =>{
               val RewriteRule(rname1, conds1, lhs1, rhs1, w) = toRewriteRule(cond)
-              val Variable(id) = rhs1
+              val RewriteVariable(id) = rhs1
               lhs1 match {
-                case Variable(idd) if m.contains(idd) && conds1.size == 0 => curVal + (id -> m(idd))
+                case RewriteVariable(idd) if m.contains(idd) && conds1.size == 0 => curVal + (id -> m(idd))
                 case _ => 
                   val new_lhs1 = instantiate(lhs1, m)
                   val new_conds1 = instantiate(And(conds1), m)
+                  def findingRule(e: Expr): Seq[RewriteRule] = e match {
+                    case And(lst) => lst.foldLeft( Seq[RewriteRule]() ) ( (cur, elem) => cur ++ findingRule(elem) )
+                    case Equals(e1, e2) => Seq(RewriteRule("localassumption", Seq(), e1, e2, 25))
+                    case _ => Seq()
+                  }
+
+                  reporter.debug("Cond " + new_conds1)
+                  SimpleRewriter.push()
+                  for (r <- findingRule(new_conds1)) SimpleRewriter.addRewriteRule(r)
                   val (s_lhs1, rl) = simplify(sf)(new_lhs1, Seq(new_conds1) ++ proofContext)
+                  SimpleRewriter.pop()
                   // println("Add new elem: "+ (id, s_lhs1))
                   curVal + (id -> s_lhs1)
               }
@@ -250,7 +302,7 @@ object SimpleRewriter extends Rewriter {
             // println("New Map : " + newM+ " used for RHS : " + rhs)
             val new_rhs = instantiate(rhs, newM)
             // println("after instantiate " + rhs + " became " + new_rhs)
-            reporter.debug("By using rule: " + rname + " we simplify \n====\n" + expr + "\n----\ninto\n----\n" + new_rhs + "\n====")
+            reporter.debug("By using rule: \n" + rule + "\nwe simplify \n====\n" + expr + "\n----\ninto\n----\n" + new_rhs + "\n====")
             return (new_rhs, SIMP_SUCCESS())
           case _ => 
         }

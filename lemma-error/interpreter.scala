@@ -47,17 +47,10 @@ object ExpressionCompiler {
    }
  }
 
-  // note: no 'holds'
+ @induct
  def run_lemma(e: Expr, post: List, stack: Stack) = {
    run(postfixAcc(e, post), stack) == run(post, Push(eval(e), stack))
- }
-
- def run_lemma1(e: Expr, p: List, s: Stack): Boolean = {
-   e match {
-     case Num(x) => true
-     case Plus(e1,e2) => true
-   }
- } ensuring { res => res && run_lemma(e, p, s) }
+ } holds
 
   // we express induction with generalization using appropriate recursion
  def run_lemma_induct(e: Expr, ss: List, stack: Stack) : Boolean = {
@@ -68,24 +61,4 @@ object ExpressionCompiler {
        run_lemma_induct(e2, Cons(PLUS(),ss), Push(eval(e1), stack))
    }
  } holds
- // could also write: ensuring(res =>  (res && run_lemma(e, ss, stack)))
-
- def compilation_correct(e:Expr) = {
-    // this is the proof:
-   run_lemma_induct(e,Nil(),Empty()) &&
-   // this is the statement:
-   run(postfixAcc(e,Nil()), Empty()) == Push(eval(e), Empty())
- } holds
- 
- /*
- 
-  // inlining is crucial to knowing that property was proved
-  // proof hints are expressed as extra conjuncts
- def test_run_lemma(e: Expr, ss: List, stack: Stack) = {
-   // this is the proof:
-   run_lemma_induct(e, ss, stack) &&
-   // this is the statement:
-   run(postfixAcc(e, ss), stack) == run(ss, Push(eval(e), stack))
- } holds
- */
 }

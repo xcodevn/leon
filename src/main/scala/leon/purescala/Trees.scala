@@ -377,6 +377,11 @@ object Trees {
     override def setType(tt: TypeTree) = { id.setType(tt); this }
   }
 
+  case class RewriteVariable(id: Identifier) extends Expr with Terminal {
+    override def getType = id.getType
+    override def setType(tt: TypeTree) = { id.setType(tt); this }
+  }
+
   case class DeBruijnIndex(index: Int) extends Expr with Terminal
 
   /* Literals */

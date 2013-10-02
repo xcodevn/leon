@@ -55,6 +55,7 @@ class PrettyPrinter(sb: StringBuffer = new StringBuffer) {
 
   def pp(tree: Expr, lvl: Int): Unit = tree match {
     case Variable(id) => sb.append(idToString(id))
+    case RewriteVariable(id) => sb.append("?"+idToString(id))
     case DeBruijnIndex(idx) => sb.append("_" + idx)
     case LetTuple(bs,d,e) =>
       sb.append("(let (" + bs.map(idToString _).mkString(",") + " := ");

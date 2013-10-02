@@ -30,6 +30,40 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
     LeonFlagOptionDef("create-testcase",   "--create-testcase",        "Write running options and output of verification into a file, and re-check in later running times ")
   )
 
+  override def generateVerificationConditions(reporter: Reporter, program: Program, functionsToAnalyse: Set[String]): Map[FunDef, List[VerificationCondition]] = {
+    val defaultTactic = new DefaultTactic(reporter)
+    defaultTactic.setProgram(program)
+    val inductionTactic = new ExtendedInductionTactic(reporter)
+    inductionTactic.setProgram(program)
+
+    var allVCs = Map[FunDef, List[VerificationCondition]]()
+
+    for(funDef <- program.definedFunctions.toList.sortWith((fd1, fd2) => fd1 < fd2) if (functionsToAnalyse.isEmpty || functionsToAnalyse.contains(funDef.id.name))) {
+
+      val tactic: Tactic =
+        if(funDef.annotations.contains("induct")) {
+          inductionTactic
+        } else {
+          defaultTactic
+        }
+
+      if(funDef.body.isDefined) {
+        val funVCs = tactic.generatePreconditions(funDef) ++
+                     tactic.generatePatternMatchingExhaustivenessChecks(funDef) ++
+                     tactic.generatePostconditions(funDef) ++
+                     tactic.generateMiscCorrectnessConditions(funDef) ++
+                     tactic.generateArrayAccessChecks(funDef)
+
+        allVCs += funDef -> funVCs.toList
+      }
+    }
+
+    val notFound = functionsToAnalyse -- allVCs.keys.map(_.id.name)
+    notFound.foreach(fn => reporter.error("Did not find function \"" + fn + "\" though it was marked for analysis."))
+
+    allVCs
+  }
+
   def checkVerificationConditions(vctx: VerificationContext, vcs: Map[FunDef, List[VerificationCondition]], cap: Option[(Program, LeonContext)] = None) : VerificationReport = {
     val reporter = vctx.reporter
     val solvers  = vctx.solvers
@@ -39,6 +73,8 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
     for((funDef, vcs) <- vcs.toSeq.sortWith((a,b) => a._1 < b._1)) {
       funDef.isReach = true
       for (vcInfo <- vcs if !interruptManager.isInterrupted()) {
+        val t1 = System.nanoTime
+
         val funDef = vcInfo.funDef
         val vc = vcInfo.condition
 
@@ -72,7 +108,6 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
         // try all solvers until one returns a meaningful answer
         solvers.find(se => {
           reporter.debug("Trying with solver: " + se.name)
-          val t1 = System.nanoTime
           val (satResult, counterexample) = SimpleSolverAPI(se).solveSAT(Not(ss_svc))
           val solverResult = satResult.map(!_)
 
@@ -212,8 +247,6 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
         // for (ru <- rus) SimpleRewriter.addRewriteRule(ru)
       // }
       Rules.addDefaultRules(SimpleRewriter)
-
-      reporter.info(SimpleRewriter.pp_rules)
     }
 
     if (doTraining) {

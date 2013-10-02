@@ -60,7 +60,7 @@ class ExtendedFairZ3Solver(context : LeonContext, program: Program) extends Fair
           if (curFun.annotations.contains("depend")) {
             curFun.dependencies match { case Some(deps) => prepareLemmas(funs.filter(f => deps.contains(f.id.name.toString))); case _ => }
           } else {
-            val m = funs.tail.filter(f => f.annotations.contains("lemma")).map( f => (f, Error(":-)"))).toMap
+            val m = funs.tail.filter(f => LemmaTools.isTrueLemma(f) && f.annotations.contains("lemma")).map( f => (f, Error(":-)"))).toMap
             if (m.size > 0)
               prepareLemmas(MaShfilter.filter(expression, m, numLemmasOption) )
           }
@@ -73,7 +73,7 @@ class ExtendedFairZ3Solver(context : LeonContext, program: Program) extends Fair
           if (curFun.annotations.contains("depend")) {
             curFun.dependencies match { case Some(deps) => prepareLemmas(funs.filter(f => deps.contains(f.id.name.toString))); case _ => }
           } else {
-            val m = funs.tail.filter(f => f.annotations.contains("lemma")).map( f => (f, MePofilter.genVC(f))).toMap
+            val m = funs.tail.filter(f => LemmaTools.isTrueLemma(f) && f.annotations.contains("lemma")).map( f => (f, MePofilter.genVC(f))).toMap
             if (m.size > 0) {
               val res = MePofilter.filter(expression, m, numLemmasOption)
               prepareLemmas(res)
