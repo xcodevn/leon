@@ -241,11 +241,11 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
     val isNotSimp = (isFlagTurnOn("codegen", ctx) || isFlagTurnOn("feelinglucky", ctx) || isFlagTurnOn("evalground", ctx))
     if  (!isNotSimp) {
 
-      // for(funDef <- program.definedFunctions.toList.sortWith((fd1, fd2) => fd1 < fd2)) {
+      for(funDef <- program.definedFunctions.toList.sortWith((fd1, fd2) => fd1 < fd2) if !funDef.hasPostcondition) {
         // println(funDef)
-        // val rus = Rules.createFunctionRewriteRules(funDef, program)
-        // for (ru <- rus) SimpleRewriter.addRewriteRule(ru)
-      // }
+        val rus = Rules.createFunctionRewriteRules(funDef, program)
+        for (ru <- rus) SimpleRewriter.addRewriteRule(ru)
+      }
       Rules.addDefaultRules(SimpleRewriter)
     }
 

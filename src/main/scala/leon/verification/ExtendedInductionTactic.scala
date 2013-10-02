@@ -68,6 +68,7 @@ class ExtendedInductionTactic(reporter: Reporter) extends InductionTactic(report
                       val nb = replace(Map(argAsVar -> sel), body)
                       nb match {
                         case Equals(e1, e2) => SimpleRewriter.addRewriteRule(Rules.createRuleWithDisableVars(e1, e2, Set(argAsVar), 25))
+                        case _ =>
                       }
                       val bodyAndPost = Let(resFresh, nb, replace(Map(Variable(pid) -> Variable(resFresh), argAsVar -> sel), matchToIfThenElse(post))) 
 

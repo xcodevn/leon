@@ -204,6 +204,11 @@ object SimpleRewriter extends Rewriter {
     // println("Simplify: " + expr.toString)
     val solver = SimpleSolverAPI(sf.withTimeout(10L))
     val (expr,rl) = old_expr match {
+      case Implies(e1, e2) => {
+        val (ex, rl) = simplify(sf)(e2, proofContext)
+        (Implies(e1, ex), SIMP_SUCCESS())
+      }
+
       case UnaryOperator(t, recons) => {
         val (ex, rl) = simplify(sf)(t, proofContext)
         (recons(ex).setType(old_expr.getType), SIMP_SUCCESS())
