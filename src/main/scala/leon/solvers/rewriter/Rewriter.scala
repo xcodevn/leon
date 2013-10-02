@@ -206,7 +206,7 @@ object SimpleRewriter extends Rewriter {
     val (expr,rl) = old_expr match {
       case Implies(e1, e2) => {
         val (ex, rl) = simplify(sf)(e2, proofContext)
-        (Implies(e1, ex), SIMP_SUCCESS())
+        (Implies(e1, ex).setType(old_expr.getType), SIMP_SUCCESS())
       }
 
       case UnaryOperator(t, recons) => {

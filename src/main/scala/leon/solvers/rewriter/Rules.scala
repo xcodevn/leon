@@ -105,7 +105,7 @@ object Rules {
     m.clear()
     if (fd.body.isDefined) {
       val Some(imp1) = fd.body
-      val imp = simplifyLets(imp1)
+      val imp = expandLets(imp1)
       // println(imp)
       // println(funDef.args)
       val fn = fd.id.toString     // function name
