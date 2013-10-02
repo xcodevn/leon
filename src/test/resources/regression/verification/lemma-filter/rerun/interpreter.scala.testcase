@@ -1,0 +1,6 @@
+training:false
+single                    postcond.           valid               Z3-f   
+run                       match.              valid               Z3-f   
+run_lemma                 postcond.           valid    induction  Z3-f   
+run_lemma                 postcond.           valid    induction  Z3-f   
+run_lemma_induct          postcond.           valid               Z3-f   

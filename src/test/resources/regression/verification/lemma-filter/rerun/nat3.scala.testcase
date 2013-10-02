@@ -1,0 +1,4 @@
+training:false
+assoc_plus_lemma          postcond.           valid    induction  Z3-f   
+assoc_plus_lemma          postcond.           valid    induction  Z3-f   
+three_odd_lemma           postcond.           valid               Z3-f   
