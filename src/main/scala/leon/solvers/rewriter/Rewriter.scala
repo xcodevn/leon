@@ -295,13 +295,47 @@ object SimpleRewriter extends Rewriter {
                     case _ => Seq()
                   }
 
+                  def findingCCS(e: Expr): Seq[CaseClassInstanceOf] = e match {
+                    case ccs : CaseClassInstanceOf => Seq(ccs)
+                    case And(lst) => lst.map(l => findingCCS(l)).foldLeft(Seq[CaseClassInstanceOf]()) ( (cur, elem) => cur ++ elem)
+                    case _ =>  Seq()
+                  }
+
                   reporter.debug("Cond " + new_conds1)
                   SimpleRewriter.push()
                   for (r <- findingRule(new_conds1)) SimpleRewriter.addRewriteRule(r)
-                  val (s_lhs1, rl) = simplify(sf)(new_lhs1, Seq(new_conds1) ++ proofContext)
+
+                  var extraConds = Seq[Expr]()
+                  var invExtraConds = Seq[Expr]()
+
+                  for (ccs <- findingCCS(new_conds1)) {
+                    val CaseClassInstanceOf(cd, ex) = ccs
+                    val CaseClassDef(i, p, f)  = cd
+                    def getNewVariable(vd: VarDecl): Variable = {
+                      val VarDecl(id, ty) = vd
+                      Variable(FreshIdentifier(ex.toString+"_"+id.toString).setType(ty))
+                    }
+                    val nl = f.map( elem => getNewVariable(elem))
+                    val csl = f.map (el => { val VarDecl(id, ty) = el; CaseClassSelector(cd, ex, id)})
+                    val se1 = nl.zip(csl).map ( el => { val (v, cl) = el; Equals(cl, v) } )
+                    val invse1 = nl.zip(csl).map ( el => { val (v, cl) = el; Equals(v, cl) } )
+                    val ma = Equals(ex, CaseClass(cd, nl.toSeq))
+                    val invma = Equals(CaseClass(cd, nl.toSeq), ex)
+                    extraConds = extraConds ++ Seq(ma) ++ se1
+                    invExtraConds = invExtraConds ++ Seq(invma) ++ invse1
+                  }
+
+                  for (r <- findingRule(And(extraConds))) SimpleRewriter.addRewriteRule(r)
+
+                  val (s_lhs11, rl1) = simplify(sf)(new_lhs1, extraConds ++ Seq(new_conds1) ++ proofContext)
+                  SimpleRewriter.pop()
+
+                  SimpleRewriter.push()
+                  for (r <- findingRule(And(invExtraConds))) SimpleRewriter.addRewriteRule(r)
+                  val (s_lhs12, rl2) = simplify(sf)(s_lhs11, invExtraConds ++ Seq(new_conds1) ++ proofContext)
                   SimpleRewriter.pop()
                   // println("Add new elem: "+ (id, s_lhs1))
-                  curVal + (id -> s_lhs1)
+                  curVal + (id -> s_lhs12)
               }
             })
             // println("New Map : " + newM+ " used for RHS : " + rhs)
