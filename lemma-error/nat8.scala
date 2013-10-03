@@ -31,17 +31,17 @@ object Nat {
   } holds
 
 
-  @lemma @induct @depend()
+  @induct @depend() @simp
   def plus_zero_lemma(a: Nat): Boolean = {
     plus(a, Zero()) == a
   } holds
 
-  @lemma @induct @depend()
+  @simp @induct @depend()
   def sub_zero_lemma(a: Nat): Boolean = {
     sub(a, Zero()) == a
   } holds
 
-  @lemma @induct @depend()
+  @simp @induct @depend()
   def assoc_plus_lemma(a: Nat, b: Nat, c: Nat): Boolean = {
     plus(a, plus(b, c)) == plus(plus(a, b), c)
   } holds
@@ -53,14 +53,14 @@ object Nat {
 
   def one() = Succ(Zero())
 
-  @lemma @induct @depend()
+  @simp @induct @depend()
   def plusOne_lemma1(a: Nat): Boolean = {
-    Succ(a) == plus(one(), a)
+    plus(one(), a) == Succ(a)
   } holds
 
-  @lemma @induct @depend()
+  @simp @induct @depend()
   def plusOne_lemma2(a: Nat): Boolean = {
-    Succ(a) == plus(a, one())
+    plus(a, one()) == Succ(a)
   } holds
 
   @lemma @induct @depend()
@@ -69,18 +69,15 @@ object Nat {
     plus(a, c) == plus(b, c)
   } holds
 
-
-  @lemma @depend("plusOne_lemma2", "assoc_plus_lemma", "plus_zero_lemma")
+  @simp @induct
+  def spll(a: Nat, b: Nat): Boolean = {
+    Succ(plus(a, b)) == plus(a, Succ(b))
+  } holds
+  
+  @induct
   def swap_plus_lemma(a: Nat, b: Nat): Boolean =  {
-    a match {
-      case Zero()   => true
-      case Succ(a1) => swap_plus_lemma(a1, b) &&
-                       plus(b, Succ(a1)) == plus(b, plus(one(), a1)) &&
-                       // plus(b, plus(one(), a1)) == plus( plus(b, one()), a1 ) &&
-                       plus(b, one()) == Succ(b) 
-                       // plus(Succ(b), a1 ) == Succ(plus(b, a1))
-    }
-  } ensuring { res => res && plus(a, b) == plus(b, a) }
+    plus(a, b) == plus(b, a) 
+  } holds
 
   def isOdd(n: Nat): Boolean = n match {
     case Zero()      => false
@@ -89,29 +86,47 @@ object Nat {
 
   def isEven(n: Nat) = !isOdd(n)
 
-  def three_odd_lemma1() = {isOdd(int2Nat(8)) } holds
   def three_odd_lemma2() = {isOdd(int2Nat(9)) } holds
 
   @lemma
-  def sumEven_lemma(n1: Nat, n2: Nat): Boolean = {
+  def sumEven_lemma1(n1: Nat, n2: Nat): Boolean = {
     require(isEven(n1) && isEven(n2))
     n1 match {
       case Zero() => true
       case Succ(Succ(n10)) => sumEven_lemma(n10, n2)
     }
   } ensuring {res => res && isEven(plus(n1,n2))}
+  
+  @lemma
+  def sumEven_lemma(n1: Nat, n2: Nat): Boolean  ={
+    require(isEven(n1) && isEven(n2))
+    sumEven_lemma1(n1,n2) && isEven(plus(n1,n2))
+  } holds
+    
 
   @lemma @induct @simp
   def succSuccPlus_lemma(n1: Nat, n2: Nat): Boolean = {
     plus(Succ(n1), Succ(n2)) == Succ(Succ(plus(n1, n2)))
   } holds
   
-  @lemma @depend("sumEven_lemma")
+  @lemma @simp
+  def negative_lemma(n: Nat): Boolean = {
+    !isOdd(n) == isEven(n)
+  } holds
+  
+  @lemma @simp
+  def sol2(a: Nat, b: Nat): Boolean = {
+    isEven(plus(a, Succ(Succ(b)))) == isEven(plus(a, b))
+  } holds
+  
+  @lemma @depend("sumEven_lemma", "negative_lemma")
   def sol1(n1: Nat, n2: Nat): Boolean = {
     require(isEven(n1) && isEven(n2))
     isEven(plus(Succ(n1), Succ(n2)))
   } holds
   
+  
+  @depend("negative_lemma", "sol1")
   def sumOdd_lemma(n1: Nat, n2: Nat): Boolean = {
     require(isOdd(n1) && isOdd(n2))
     (n1, n2) match {

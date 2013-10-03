@@ -256,15 +256,20 @@ object SimpleRewriter extends Rewriter {
         def isSubSimplify(expr: Expr): Boolean = {
           expr match {
           case Equals(_, v @ RewriteVariable(id))  if !varsInLHS.contains(id) => true
+          case Iff(_, v @ RewriteVariable(id))  if !varsInLHS.contains(id) => true
           case Implies(_, Equals(_, v @ RewriteVariable(id)))  if !varsInLHS.contains(id) => true
+          case Implies(_, Iff(_, v @ RewriteVariable(id)))  if !varsInLHS.contains(id) => true
           case _ => false
         }
         }
 
         def toRewriteRule(expr: Expr): RewriteRule = expr match {
           case Equals(lhs, rhs @ RewriteVariable(id)) if !varsInLHS.contains(id) => RewriteRule("somename", Seq(), lhs, rhs,0)
+          case Iff(lhs, rhs @ RewriteVariable(id)) if !varsInLHS.contains(id) => RewriteRule("somename", Seq(), lhs, rhs,0)
           case Implies(And(conds), Equals(lhs, rhs @ RewriteVariable(id)))  if !varsInLHS.contains(id) => RewriteRule("somename", conds, lhs, rhs,0)
+          case Implies(And(conds), Iff(lhs, rhs @ RewriteVariable(id)))  if !varsInLHS.contains(id) => RewriteRule("somename", conds, lhs, rhs,0)
           case Implies(cond, Equals(lhs, rhs @ RewriteVariable(id)))  if !varsInLHS.contains(id) => RewriteRule("somename", Seq(cond), lhs, rhs, 0)
+          case Implies(cond, Iff(lhs, rhs @ RewriteVariable(id)))  if !varsInLHS.contains(id) => RewriteRule("somename", Seq(cond), lhs, rhs, 0)
           case _ => {
             // println(expr)
             throw new Throwable("We don't want this case!")
@@ -292,6 +297,7 @@ object SimpleRewriter extends Rewriter {
                   def findingRule(e: Expr): Seq[RewriteRule] = e match {
                     case And(lst) => lst.foldLeft( Seq[RewriteRule]() ) ( (cur, elem) => cur ++ findingRule(elem) )
                     case Equals(e1, e2) => Seq(RewriteRule("localassumption", Seq(), e1, e2, 25))
+                    case Iff(e1, e2) => Seq(RewriteRule("localassumption", Seq(), e1, e2, 25))
                     case _ => Seq()
                   }
 

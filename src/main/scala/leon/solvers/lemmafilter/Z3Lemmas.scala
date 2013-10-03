@@ -71,6 +71,7 @@ class ExtendedFairZ3Solver(context : LeonContext, program: Program) extends Fair
           val curFun = program.definedFunctions.filter(f=>f.isReach).sortWith( (fd1,fd2) => fd1 < fd2 ).reverse.head
           val funs = curFun +: program.definedFunctions.filter(f => f < curFun)
           if (curFun.annotations.contains("depend")) {
+            // println("Hello depend")
             curFun.dependencies match { case Some(deps) => prepareLemmas(funs.filter(f => deps.contains(f.id.name.toString))); case _ => }
           } else {
             val m = funs.tail.filter(f => LemmaTools.isTrueLemma(f) && f.annotations.contains("lemma")).map( f => (f, MePofilter.genVC(f))).toMap
@@ -112,7 +113,7 @@ class ExtendedFairZ3Solver(context : LeonContext, program: Program) extends Fair
           case None =>
           case Some(imple) =>
           // So this looks like a good lemma :D
-          // reporter.info("Yeepee! [%s] is a nice lemma!".format(fname))
+          reporter.info("Yeepee! [%s] is a nice lemma!".format(fname))
 
           val lemmaBody: Expr = funDef.precondition.map { pre =>
             Implies(pre, imple)
@@ -154,14 +155,14 @@ class ExtendedFairZ3Solver(context : LeonContext, program: Program) extends Fair
               // mp.toSeq.map(c => z3.mkPattern(toZ3Formula(c, initialMap).get))
             }
 
-            // reporter.info(lst.toSeq)
+            reporter.info(lst.toSeq)
 
             // val z3MultiPatterns = z3.mkPattern(lst.toSeq.flatten: _*)
 
             val axiom: Z3AST = z3.mkForAll(11, lst.toSeq, namedBounds, quantBody)
 
-            // reporter.info("Look ! I made an axiom !")
-            // reporter.info(axiom.toString)
+            reporter.info("Look ! I made an axiom !")
+            reporter.info(axiom.toString)
 
             lemmaZ3ASTs += axiom // re-use latter
             // solver.assertCnstr(axiom)
@@ -174,7 +175,7 @@ class ExtendedFairZ3Solver(context : LeonContext, program: Program) extends Fair
           }
         }
       } else {
-          // reporter.error("[%s] is NOT a nine lemma!".format(funDef.id.name))
+          reporter.error("[%s] is NOT a nine lemma!".format(funDef.id.name))
       }
     }
 

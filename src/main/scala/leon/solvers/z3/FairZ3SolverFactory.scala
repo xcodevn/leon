@@ -539,7 +539,10 @@ class FairZ3SolverFactory(val context : LeonContext, val program: Program)
 
               solver.push() // FIXME: remove when z3 bug is fixed
               /* We only use lemma when checking UNSAT */
-              for (lemma <- lemmas.getOrElse(Seq())) solver.assertCnstr(lemma)
+              for (lemma <- lemmas.getOrElse(Seq())) {
+                reporter.debug(lemma)
+                solver.assertCnstr(lemma)
+              }
               val res2 = solver.checkAssumptions(assumptionsAsZ3 : _*)
               solver.pop()  // FIXME: remove when z3 bug is fixed
 

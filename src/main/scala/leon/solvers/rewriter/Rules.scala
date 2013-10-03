@@ -135,6 +135,7 @@ object Rules {
 
 
       // lemma rewrite rules
+      // println(fd)
       val s1 = if(fd.annotations.contains("simp")) {
         // println(fd)
         val precond = fd.precondition match {
@@ -144,6 +145,7 @@ object Rules {
 
         convert2Pattern(imp) match {
           case Equals(e1, e2) => Seq( RewriteRule(fn + "_simp_lemma", precond, e1, e2, 20) )
+          case Iff(e1, e2) => Seq( RewriteRule(fn + "_simp_lemma", precond, e1, e2, 20) )
           case _ => Seq()
         }
       } else Seq()
