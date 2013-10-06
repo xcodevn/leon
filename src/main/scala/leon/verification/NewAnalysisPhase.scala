@@ -70,6 +70,13 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
 
     val interruptManager = vctx.context.interruptManager
 
+
+    /* Create a new MePo filter here */
+    val (ft, funLst) = cap match {
+      case Some((p, c)) => (new TrivialFilter, p.definedFunctions)
+      case _      => (new TrivialFilter, Seq())
+    }
+
     for((funDef, vcs) <- vcs.toSeq.sortWith((a,b) => a._1 < b._1)) {
       funDef.isReach = true
       for (vcInfo <- vcs if !interruptManager.isInterrupted()) {
@@ -101,9 +108,32 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
           }
         }
 
-        reporter.info("Simplify: \n" + svc + "\n======")
-        val ss_svc = rec_simp(svc)
-        reporter.info("Our output \n============\n"  +ss_svc.toString + "\n=============\n")
+        val ss_svc = cap match {
+          case Some((program, ctx)) => {
+            reporter.info("Simplify: \n" + svc + "\n======")
+            // Push
+            SimpleRewriter.push()
+
+            // Filtering is right here
+            // In fact, we re-order fun in the best way we can, not filtering at all :|
+            // println("Before " + funLst.map(_.id.toString))
+            val lst = Filtering.filter(Seq(ft), svc, funLst.filter(e => e.isReach && e != funDef))
+            // println("After  " + lst.map(_.id.toString))
+
+            for (fun <- lst) {
+              val rus = Rules.createFunctionRewriteRules(fun, program)
+              for (ru <- rus) SimpleRewriter.addRewriteRule(ru)
+            }
+
+            val ss_svc_temp = rec_simp(svc)
+            SimpleRewriter.pop() // Reset status as before filtering
+
+            reporter.info("Our output \n============\n"  +ss_svc_temp.toString + "\n=============\n")
+            ss_svc_temp
+          }
+
+          case _ => svc
+        }
 
         // try all solvers until one returns a meaningful answer
         solvers.find(se => {
@@ -152,14 +182,6 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
           }
           case _ =>
         }
-      }
-
-      /* Now add lemma as a rewrite rule when we proved it right */
-      cap match {
-        case Some((program, ctx)) =>
-          val rus = Rules.createFunctionRewriteRules(funDef, program)
-          for (ru <- rus) SimpleRewriter.addRewriteRule(ru)
-        case _ =>
       }
     }
 

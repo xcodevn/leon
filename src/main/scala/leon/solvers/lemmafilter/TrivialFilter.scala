@@ -11,5 +11,5 @@ class TrivialFilter extends Filter {
   val name = "Trivial Filter"
   val description = "This filter does not do anything just return original list of lemmas!"
 
-  def filter(conjecture: Expr, m: Map[FunDef, Expr], num: Int): Seq[FunDef] = m.keySet.toSeq.filter(f => f.annotations.contains("lemma")).take(num)
+  def filter(conjecture: Expr, m: Map[FunDef, Expr], num: Int): Seq[FunDef] = m.keySet.toSeq.take(num)
 }

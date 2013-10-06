@@ -83,11 +83,12 @@ class ExtendedFairZ3Solver(context : LeonContext, program: Program) extends Fair
           MePofilter.fairZ3.free() // I don't need you anymore
 
         case _ =>
-          prepareLemmas(program.definedFunctions.filter(f=> f.annotations.contains("lemma"))) /* As before I come here ;) */
+          prepareLemmas(program.definedFunctions.filter(f=> f.annotations.contains("lemma"))) /* As before I come here EPFL;) */
       }
     }
   }
 
+  /* This function is used by filter for having a deeper representation about functions */
   def unfold(expr: Expr, times: Int): Seq[Z3AST] = {
     val unrollingBank = new UnrollingBank()
     val newClauses = unrollingBank.scanForNewTemplates(expr)
