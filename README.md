@@ -13,6 +13,7 @@ To build it, you will need, for example, the following:
 * sbt, e.g. version 0.12.1 (to build Leon)
 * a recent GLIBC3 or later, works with e.g. _apt-get_ (for Z3)
 * GNU Multiprecision library, e.g. gmp3, works with e.g. _apt-get_ (for Z3)
+* python-numpy package, we need this package for MaSh filter (a filter for improving speed of simplifier)
 
 The following can be obtained from the web, but for convenience they are contained in the
 repository and are actually automatically handled by the default build configuration:
@@ -27,6 +28,7 @@ To build, type this:
     $ sbt package # takes a while
     $ sbt script
     $ source ./setupenv
+    $ sudo apt-get install python-numpy
 
 Then you can try e.g.
 
