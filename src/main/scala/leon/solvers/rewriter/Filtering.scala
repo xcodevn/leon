@@ -25,10 +25,11 @@ object Filtering {
 
     val truee = BooleanLiteral(true)
     val falsee = BooleanLiteral(false)
-    val (res, post) = fun.postcondition.getOrElse( (FreshIdentifier("res"), falsee) )
     val imp = fun.implementation.getOrElse(truee)
+    val (res, post) = fun.postcondition.getOrElse( (FreshIdentifier("res"), falsee) )
+    val re = if (post == falsee) Variable(res).setType(imp.getType) else Variable(res)
     // return: pre -> post /\ res == imp
-    return And(Implies(fun.precondition.getOrElse(truee), post), Equals(imp, Variable(res).setType(imp.getType)))
+    return And(Implies(fun.precondition.getOrElse(truee), post), Equals(imp, re))
   }
 
   def filter(ft: Seq[Filter], expr: Expr, funLst: Seq[FunDef]): Seq[FunDef] = {

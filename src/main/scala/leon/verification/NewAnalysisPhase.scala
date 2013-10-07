@@ -88,7 +88,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
         reporter.info("Now considering '" + vcInfo.kind + "' VC for " + funDef.id + "...")
         reporter.debug("Verification condition (" + vcInfo.kind + ") for ==== " + funDef.id + " ====")
         reporter.debug(simplifyLets(vc))
-        val svc = simplifyLets(vc)
+        val svc = expandLets(vc)
 
         def rec_simp(ex: Expr, count: Int = 5): Expr = {
           if (count == 0) ex else {
@@ -138,8 +138,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
           val s = sf.getNewSolver
           try {
             reporter.debug("Trying with solver: " + s.name)
-            val t1 = System.nanoTime
-            s.assertCnstr(Not(vc))
+            s.assertCnstr(Not(ss_svc))
 
             val satResult = s.check
             val counterexample: Map[Identifier, Expr] = if (satResult == Some(true)) s.getModel else Map()
@@ -152,10 +151,12 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
               case _ if interruptManager.isInterrupted() =>
                 reporter.info("=== CANCELLED ===")
                 vcInfo.time = Some(dt)
+                vcInfo.goal = Some(ss_svc)
                 false
 
               case None =>
                 vcInfo.time = Some(dt)
+                vcInfo.goal = Some(ss_svc)
                 false
 
               case Some(true) =>
