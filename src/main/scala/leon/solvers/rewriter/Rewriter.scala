@@ -28,10 +28,10 @@ case class RewriteRule (val name: String, val conds: Seq[Expr], val lhs: Expr, v
 abstract class Rewriter {
   // This function will return a subset of lemmas which are really necessary for proof of `conjecture`
 
-  private var stack : List[MutableList[RewriteRule]] = List(MutableList())
+  private var stack : List[MutableMap[String, Seq[RewriteRule]]] = List(MutableMap())
 
   def push() = {
-    stack = (MutableList() ++ rules) :: stack 
+    stack = (MutableMap() ++ rules) :: stack 
     reporter.debug("Rewriter push()")
   }
 
@@ -59,7 +59,7 @@ abstract class Rewriter {
   def pp_rules = {
     reporter.debug("List of current rules:")
     var c = 0
-    for (ru <- rules) {
+    for (ru <- rules.values.flatten) {
       c = c + 1
       reporter.debug("#%d\nName: %s\nConds: %s\nLHS: %s\nRHS: %s".format(c, ru.name, ru.conds.toString, ru.lhs.toString, ru.rhs.toString))
     }
@@ -92,12 +92,29 @@ abstract class Rewriter {
     case t @ _ => t
 
   }
+  def exprHash(e: Expr): String = {
+    e match {
+      case FunctionInvocation(fd, _) => fd.id.toString
+      case CaseClassSelector(ccd, cc, cl) => ccd.id.toString + "." + cl.toString
+      case CaseClass(ccd, _) => ccd.id.toString
+      case v : Variable       => v.toString
+      case t : BooleanLiteral => t.toString
+      case t : IntLiteral => t.toString
+      case t @ _ => t.getClass.getSimpleName
+    }
+  "hello"
+  }
+
+  def hashRule(r: RewriteRule): String = exprHash(r.lhs)
+
   protected def rules = stack.head
   def resetRules = rules.clear
   def addRewriteRule(rule: RewriteRule) = {
     reporter.debug("Adding rewrite rule: ")
     reporter.debug("Name: %s\nConds: %s\nLHS: %s\nRHS: %s".format(rule.name, rule.conds.toString, rule.lhs.toString, rule.rhs.toString))
-    rules += rule
+    val str = hashRule(rule)
+    val old_rule = rules.getOrElse(str, Seq[RewriteRule]())
+    rules.update(str, old_rule :+ rule)
   }
 
   def simplify(sf: SolverFactory[Solver])(expr: Expr, proofContext: Seq[Expr]): (Expr, SIMPRESULT)
@@ -246,7 +263,11 @@ object SimpleRewriter extends Rewriter {
       case t @ _ => Set()
     }
 
-    for ( rule @ RewriteRule(rname, conds, lhs, rhs, w) <- rules.sortWith(_.weight > _.weight)) {
+    // println(exprHash(expr))
+    val rs = rules.getOrElse(exprHash(expr), Seq())
+    // println(rs)
+
+    for ( rule @ RewriteRule(rname, conds, lhs, rhs, w) <- rs.sortWith(_.weight > _.weight)) {
       val varsInLHS = rewriteVariablesOf(lhs)
 
       val m: MutableMap[Identifier, Expr] = MutableMap.empty
