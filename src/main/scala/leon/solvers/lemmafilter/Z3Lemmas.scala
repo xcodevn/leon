@@ -12,7 +12,7 @@ import purescala.Common._
 import leon.purescala.Definitions._
 import leon.solvers._
 
-class ExtendedFairZ3Solver(context : LeonContext, program: Program) extends FairZ3SolverFactory(context, program) {
+class ExtendedFairZ3Solver(context : LeonContext, program: Program) extends FairZ3Solver(context, program) {
 
   val (lemmaFlag, filterOption, numLemmasOption) = locally {
     var lemmaFlag = false
@@ -28,25 +28,12 @@ class ExtendedFairZ3Solver(context : LeonContext, program: Program) extends Fair
     (lemmaFlag, filterOption, numLemmasOption)
   }
 
-  override def getNewSolver = {
-    val solver = super.getNewSolver
-    new Solver {
-      var addLemmaYet = false
-      def interrupt = solver.interrupt
-      def recoverInterrupt = solver.recoverInterrupt
-      def assertCnstr(expression: leon.purescala.Trees.Expr): Unit = {
-        solver.assertCnstr(expression)
-        if (!addLemmaYet)
-          filter(expression)
-        addLemmaYet = true
-      }
-      def check = solver.check
-      def checkAssumptions(assumptions: Set[leon.purescala.Trees.Expr]) = solver.checkAssumptions(assumptions)
-      def getModel = solver.getModel
-      def getUnsatCore = solver.getUnsatCore
-      def pop(lvl: Int) = solver.pop(lvl)
-      def push = solver.push
-    }
+  var addLemmaYet = false
+  override def assertCnstr(expression: leon.purescala.Trees.Expr): Unit = {
+    super.assertCnstr(expression)
+    if (!addLemmaYet)
+      filter(expression)
+    addLemmaYet = true
   }
 
   def filter(expression: Expr) = {

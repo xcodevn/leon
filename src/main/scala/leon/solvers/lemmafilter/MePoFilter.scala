@@ -19,7 +19,7 @@ class MePoFilter (context : LeonContext, prog: Program) extends Filter {
    * Create our own Z3 solver
    * Doing some more stuff for correctly running of the solver (that is the problem of a state machine :[ )
    */
-  val fairZ3 = new ExtendedFairZ3Solver(context, prog); fairZ3.getNewSolver
+  val fairZ3 = new ExtendedFairZ3Solver(context, prog)
 
   val NUM_UNFOLD = 1         // We should be change this value
   val CONST_C = 2.4          // We should be change this value

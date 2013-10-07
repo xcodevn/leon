@@ -94,9 +94,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
           if (count == 0) ex else {
             val rl = cap match {
               case Some((program,ctx)) =>
-                val rwSolver = new UninterpretedZ3SolverFactory(ctx, program)
-                val out = SimpleRewriter.simplify(rwSolver)(ex, Seq())
-                rwSolver.free()
+                val out = SimpleRewriter.simplify(SolverFactory( () => new UninterpretedZ3Solver(ctx, program)))(ex, Seq())
                 out._1
 
               case _ => ex
@@ -136,52 +134,59 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
         }
 
         // try all solvers until one returns a meaningful answer
-        solvers.find(se => {
-          reporter.debug("Trying with solver: " + se.name)
-          val (satResult, counterexample) = SimpleSolverAPI(se).solveSAT(Not(ss_svc))
-          val solverResult = satResult.map(!_)
+        solvers.find(sf => {
+          val s = sf.getNewSolver
+          try {
+            reporter.debug("Trying with solver: " + s.name)
+            val t1 = System.nanoTime
+            s.assertCnstr(Not(vc))
 
-          val t2 = System.nanoTime
-          val dt = ((t2 - t1) / 1000000) / 1000.0
+            val satResult = s.check
+            val counterexample: Map[Identifier, Expr] = if (satResult == Some(true)) s.getModel else Map()
+            val solverResult = satResult.map(!_)
 
-          solverResult match {
-            case _ if interruptManager.isInterrupted() =>
-              reporter.info("=== CANCELLED ===")
-              vcInfo.time = Some(dt)
-              false
+            val t2 = System.nanoTime
+            val dt = ((t2 - t1) / 1000000) / 1000.0
 
-            case None =>
-              vcInfo.time = Some(dt)
-              false
+            solverResult match {
+              case _ if interruptManager.isInterrupted() =>
+                reporter.info("=== CANCELLED ===")
+                vcInfo.time = Some(dt)
+                false
 
-            case Some(true) =>
-              reporter.info("==== VALID ====")
+              case None =>
+                vcInfo.time = Some(dt)
+                false
 
+              case Some(true) =>
+                reporter.info("==== VALID ====")
+
+                vcInfo.hasValue = true
+                vcInfo.value = Some(true)
+                vcInfo.solvedWith = Some(s)
+                vcInfo.time = Some(dt)
+                true
+
+              case Some(false) =>
+                reporter.error("Found counter-example : ")
+                reporter.error(counterexample.toSeq.sortBy(_._1.name).map(p => p._1 + " -> " + p._2).mkString("\n"))
+                reporter.error("==== INVALID ====")
+                vcInfo.hasValue = true
+                vcInfo.value = Some(false)
+                vcInfo.solvedWith = Some(s)
+                vcInfo.counterExample = Some(counterexample)
+                vcInfo.time = Some(dt)
+                true
+            }
+          } finally {
+            s.free()
+          }}) match {
+            case None => {
               vcInfo.hasValue = true
-              vcInfo.value = Some(true)
-              vcInfo.solvedWith = Some(se)
-              vcInfo.time = Some(dt)
-              true
-
-            case Some(false) =>
-              reporter.error("Found counter-example : ")
-              reporter.error(counterexample.toSeq.sortBy(_._1.name).map(p => p._1 + " -> " + p._2).mkString("\n"))
-              reporter.error("==== INVALID ====")
-              vcInfo.hasValue = true
-              vcInfo.value = Some(false)
-              vcInfo.solvedWith = Some(se)
-              vcInfo.counterExample = Some(counterexample)
-              vcInfo.time = Some(dt)
-              true
+              reporter.warning("==== UNKNOWN ====")
+            }
+            case _ =>
           }
-        }) match {
-          case None => {
-            vcInfo.hasValue = true
-            vcInfo.goal = Option(ss_svc)
-            reporter.warning("==== UNKNOWN ====")
-          }
-          case _ =>
-        }
       }
     }
 
@@ -241,8 +246,6 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
 
     val reporter = ctx.reporter
 
-    val fairZ3 = new ExtendedFairZ3Solver(ctx, program)
-
     def isFlagTurnOn(f: String, ctx: LeonContext): Boolean = {
       for (op <- ctx.options) {
         op match {
@@ -278,31 +281,26 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
       MaShFilter.fairZ3.free()
     }
 
-    val baseSolvers : Seq[SolverFactory[Solver]] = fairZ3 :: Nil
+    val baseFactories = Seq(
+      SolverFactory(() => new ExtendedFairZ3Solver(ctx, program))
+    )
 
-    val solvers: Seq[SolverFactory[Solver]] = timeout match {
-      case Some(t) =>
-        baseSolvers.map(_.withTimeout(100L*t))
-
+    val solverFactories = timeout match {
+      case Some(sec) =>
+        baseFactories.map { sf =>
+          new TimeoutSolverFactory(sf, sec*1000L)
+        }
       case None =>
-        baseSolvers
+        baseFactories
     }
 
-    val vctx = VerificationContext(ctx, solvers, reporter)
+    val vctx = VerificationContext(ctx, solverFactories, reporter)
 
-    val report = if(solvers.size >= 1) {
+    val report = {
       reporter.debug("Running verification condition generation...")
       val vcs = generateVerificationConditions(reporter, program, functionsToAnalyse)
-      if (!isNotSimp)
-        checkVerificationConditions(vctx, vcs, Option((program,ctx_wo_filter)))
-      else
-        checkVerificationConditions(vctx, vcs, None)
-    } else {
-      reporter.warning("No solver specified. Cannot test verification conditions.")
-      VerificationReport.emptyReport
+      checkVerificationConditions(vctx, vcs, Some(program, ctx))
     }
-
-    solvers.foreach(_.free())
 
     if (create_testcase) {
       reporter.info("Writing down options and output...")
@@ -310,5 +308,4 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
     }
     report
   }
-
 }

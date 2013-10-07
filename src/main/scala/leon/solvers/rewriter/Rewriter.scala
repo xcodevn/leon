@@ -202,7 +202,7 @@ object SimpleRewriter extends Rewriter {
 
   def simplify(sf: SolverFactory[Solver])(old_expr: Expr, proofContext: Seq[Expr]): (Expr, SIMPRESULT) = {
     // println("Simplify: " + expr.toString)
-    val solver = SimpleSolverAPI(sf.withTimeout(10L))
+    val solver = SimpleSolverAPI(sf)
     val (expr,rl) = old_expr match {
       case Implies(e1, e2) => {
         val (ex, rl) = simplify(sf)(e2, proofContext)
