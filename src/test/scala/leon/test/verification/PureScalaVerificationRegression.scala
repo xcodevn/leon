@@ -58,7 +58,7 @@ class PureScalaVerificationRegression extends LeonTestSuite {
       "regression/verification/purescala/" + cat,
       _.endsWith(".scala"))
 
-    for(f <- fs) {
+    for(f <- fs.toSeq.sorted) {
       mkTest(f, List(LeonFlagOption("feelinglucky", true)), forError)(block)
       mkTest(f, List(LeonFlagOption("codegen", true), LeonFlagOption("evalground", true), LeonFlagOption("feelinglucky", true)), forError)(block)
       mkTest(f, List(LeonFlagOption("training", true), LeonValueOption("filter", "MaSh"), LeonFlagOption("codegen", true), LeonFlagOption("evalground", true), LeonFlagOption("feelinglucky", true)), forError)(block)

@@ -91,10 +91,13 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
         val svc = expandLets(vc)
 
         def rec_simp(ex: Expr, count: Int = 5): Expr = {
+          if (count == 0) println("Too much recusive")
           if (count == 0) ex else {
             val rl = cap match {
               case Some((program,ctx)) =>
-                val out = SimpleRewriter.simplify(SolverFactory( () => new UninterpretedZ3Solver(ctx, program)))(ex, Seq())
+                val sf1 = SolverFactory( () => new UninterpretedZ3Solver(ctx, program))
+                val sf  = new TimeoutSolverFactory(sf1, 10L)
+                val out = SimpleRewriter.simplify(sf)(ex, Seq())
                 out._1
 
               case _ => ex
@@ -300,7 +303,10 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
     val report = {
       reporter.debug("Running verification condition generation...")
       val vcs = generateVerificationConditions(reporter, program, functionsToAnalyse)
-      checkVerificationConditions(vctx, vcs, Some(program, ctx))
+      if (!isNotSimp)
+        checkVerificationConditions(vctx, vcs, Some(program, ctx))
+      else
+        checkVerificationConditions(vctx, vcs, None)
     }
 
     if (create_testcase) {

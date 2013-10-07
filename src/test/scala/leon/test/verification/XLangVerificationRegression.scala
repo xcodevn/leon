@@ -58,7 +58,7 @@ class XLangVerificationRegression extends LeonTestSuite {
       "regression/verification/xlang/" + cat,
       _.endsWith(".scala"))
 
-    for(f <- fs) {
+    for(f <- fs.toSeq.sorted) {
       mkTest(f, forError)(block)
     }
   }

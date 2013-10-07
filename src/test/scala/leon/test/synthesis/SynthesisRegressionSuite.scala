@@ -19,7 +19,7 @@ class SynthesisRegressionSuite extends LeonTestSuite {
   private def forEachFileIn(path : String)(block : File => Unit) {
     val fs = filesInResourceDir(path, _.endsWith(".scala"))
 
-    for(f <- fs) {
+    for(f <- fs.toSeq.sorted) {
       block(f)
     }
   }

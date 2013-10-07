@@ -69,7 +69,7 @@ class NewTestFramework extends LeonTestSuite {
       lst.toList
     }
 
-    for(f <- fs) {
+    for(f <- fs.toSeq.sorted) {
       val tcf = new File(f.getParentFile, f.getName + ".testcase")
       val cont = Source.fromFile(tcf)(Codec.UTF8).mkString
       val lst = cont.split("\n")
