@@ -27,6 +27,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
     LeonValueOptionDef("functions", "--functions=f1:f2", "Limit verification to f1,f2,..."),
     LeonValueOptionDef("timeout",   "--timeout=T",       "Timeout after T seconds when trying to prove a verification condition."),
     LeonFlagOptionDef("training",   "--training",        "Train leon by using @depend"),
+    LeonFlagOptionDef("profiling",   "--profiling",      "Wait 10 sec for profiling"),
     LeonFlagOptionDef("create-testcase",   "--create-testcase",        "Write running options and output of verification into a file, and re-check in later running times ")
   )
 
@@ -115,8 +116,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
             }
 
             val ctx_wo_filter = LeonContext(new SilentReporter, ctx.interruptManager, ctx.settings, Seq(), Seq(), ctx.timers)
-            val sf1 = SolverFactory( () => new UninterpretedZ3Solver(ctx_wo_filter, program))
-            val sf  = new TimeoutSolverFactory(sf1, 10L)
+            val sf = SolverFactory( () => new UninterpretedZ3Solver(ctx_wo_filter, program))
             val simp_solver = SimpleSolverAPI(sf)
 
             def rec_simp(ex: Expr, count: Int = 5): Expr = { if (count == 0) println("Too much recusive")
@@ -259,6 +259,17 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
       case LeonFlagOption("training", v) => doTraining = v
 
       case LeonFlagOption("create-testcase", v) => create_testcase = v
+
+      case LeonFlagOption("profiling", true) => { 
+                                             println("Sleep 10 sec for profiling");
+                                             try {
+                                                   Thread.sleep(10000);
+                                             } catch {
+                                               case _ : Throwable => Thread.currentThread().interrupt();
+                                             }
+      }
+
+                                            
 
       case _ =>
     }

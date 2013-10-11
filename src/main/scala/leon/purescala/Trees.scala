@@ -62,9 +62,19 @@ object Trees {
   /* Control flow */
   case class FunctionInvocation(funDef: FunDef, args: Seq[Expr]) extends Expr with FixedType with ScalacPositional {
     val fixedType = funDef.returnType
-
-    funDef.args.zip(args).foreach { case (a, c) => typeCheck(c, a.tpe) }
   }
+
+  object FunctionInvocation {
+    def apply(fd: FunDef, args: Seq[Expr], doCheckType: Boolean = true): FunctionInvocation = {
+      if (doCheckType) {
+        println("Check type FI")
+        fd.args.zip(args).foreach { case (a, c) => typeCheck(c, a.tpe) }
+      }
+      FunctionInvocation(fd, args)
+    }
+  }
+
+
   case class IfExpr(cond: Expr, thenn: Expr, elze: Expr) extends Expr with FixedType {
     val fixedType = leastUpperBound(thenn.getType, elze.getType).getOrElse(AnyType)
   }

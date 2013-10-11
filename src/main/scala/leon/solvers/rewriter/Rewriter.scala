@@ -77,6 +77,9 @@ abstract class Rewriter {
 
   def clearRules = rules.clear
   def instantiate(expr: Expr, m: MutableMap[Identifier, Expr]): Expr = expr match {
+    case FunctionInvocation(fd, args) => {
+      FunctionInvocation(fd, args.map(ag => instantiate(ag, m)), false)
+    }
     case RewriteVariable(id) if m.contains(id) => {
       // println("Our map " + m + " map for id: "  + id + " to " + m(id))
       m(id)
