@@ -49,6 +49,20 @@ object Rules {
 
   val m: MutableMap[Identifier, RewriteVariable] = MutableMap.empty
 
+  def containsChooseExpr(expr: Expr): Boolean = {
+    def convert(t : Expr) : Boolean = t match {
+      case (i: Choose) => true
+      case _ => false
+    }
+    def combine(c1 : Boolean, c2 : Boolean) : Boolean = c1 || c2
+    def compute(t : Expr, c : Boolean) = t match {
+      case (i: IfExpr) => true
+      case _ => c
+    }
+    treeCatamorphism(convert, combine, compute, expr)
+  }
+
+
   def convert2Pattern(e: Expr, s: Set[Variable] = Set()): Expr = {
 
     def toRewriteVariable(x: Variable): RewriteVariable = {
@@ -106,52 +120,54 @@ object Rules {
     if (fd.body.isDefined) {
       val Some(imp1) = fd.body
       val imp = expandLets(imp1)
-      // println(imp)
-      // println(funDef.args)
-      val fn = fd.id.toString     // function name
-      val lstArgs = fd.args.map(arg => { val VarDecl(v, ty) = arg; convert2Pattern(Variable(v).setType(ty)) }).toSeq
-      val fi = FunctionInvocation(fd, lstArgs)
-      val s0 = imp match { 
-        case MatchExpr(_, _) => {
-          def travelMatch(ex: Expr, c: Int, conds: Seq[Expr]): Seq[RewriteRule] = {
-            ex match {
-              case IfExpr(con, ex1, ex2) => {
-                val rn = fn + "_simp" + c.toString
-                val conn  = convert2Pattern(con)
-                RewriteRule(rn, conn +: conds, fi, ex1, 5) +: travelMatch(ex2, c+1, Not(conn) +: conds)
-              }
-              case _ => Seq( RewriteRule(fn + "_simp" + c.toString, conds, fi, ex, 5) )
-            } 
+      if (!containsChooseExpr(imp)) {
+        // println(imp)
+        // println(funDef.args)
+        val fn = fd.id.toString     // function name
+        val lstArgs = fd.args.map(arg => { val VarDecl(v, ty) = arg; convert2Pattern(Variable(v).setType(ty)) }).toSeq
+        val fi = FunctionInvocation(fd, lstArgs)
+        val s0 = imp match { 
+          case MatchExpr(_, _) => {
+            def travelMatch(ex: Expr, c: Int, conds: Seq[Expr]): Seq[RewriteRule] = {
+              ex match {
+                case IfExpr(con, ex1, ex2) => {
+                  val rn = fn + "_simp" + c.toString
+                  val conn  = convert2Pattern(con)
+                  RewriteRule(rn, conn +: conds, fi, ex1, 5) +: travelMatch(ex2, c+1, Not(conn) +: conds)
+                }
+                case _ => Seq( RewriteRule(fn + "_simp" + c.toString, conds, fi, ex, 5) )
+              } 
+            }
+            val ex = convert2Pattern(matchToIfThenElse(imp))
+            travelMatch(ex, 1, Seq())
           }
-          val ex = convert2Pattern(matchToIfThenElse(imp))
-          travelMatch(ex, 1, Seq())
+
+          case _ =>
+            if (!prog.isRecursive(fd)) {
+              Seq(RewriteRule(fd.id.toString + "_simp",Seq(), fi, convert2Pattern(matchToIfThenElse(imp)),15))
+            } else Seq()
         }
 
-        case _ =>
-          if (!prog.isRecursive(fd)) {
-            Seq(RewriteRule(fd.id.toString + "_simp",Seq(), fi, convert2Pattern(matchToIfThenElse(imp)),15))
-          } else Seq()
-      }
 
-
-      // lemma rewrite rules
-      // println(fd)
-      val s1 = if(fd.annotations.contains("simp")) {
+        // lemma rewrite rules
         // println(fd)
-        val precond = fd.precondition match {
-          case Some(pre) => Seq(convert2Pattern(pre))
-          case _         => Seq()
-        }
+        val s1 = if(fd.annotations.contains("simp")) {
+          // println(fd)
+          val precond = fd.precondition match {
+            case Some(pre) => Seq(convert2Pattern(pre))
+            case _         => Seq()
+          }
 
-        convert2Pattern(imp) match {
-          case Equals(e1, e2) => Seq( RewriteRule(fn + "_simp_lemma", precond, e1, e2, 20) )
-          case Iff(e1, e2) => Seq( RewriteRule(fn + "_simp_lemma", precond, e1, e2, 20) )
-          case _ => Seq()
-        }
+          convert2Pattern(imp) match {
+            case Equals(e1, e2) => Seq( RewriteRule(fn + "_simp_lemma", precond, e1, e2, 20) )
+            case Iff(e1, e2) => Seq( RewriteRule(fn + "_simp_lemma", precond, e1, e2, 20) )
+            case _ => Seq()
+          }
+        } else Seq()
+        
+
+        s0 ++ s1
       } else Seq()
-      
-
-      s0 ++ s1
     } else Seq()
   }
 }

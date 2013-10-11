@@ -90,25 +90,6 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
         reporter.debug(simplifyLets(vc))
         val svc = expandLets(vc)
 
-        def rec_simp(ex: Expr, count: Int = 5): Expr = {
-          if (count == 0) println("Too much recusive")
-          if (count == 0) ex else {
-            val rl = cap match {
-              case Some((program,ctx)) =>
-                val sf1 = SolverFactory( () => new UninterpretedZ3Solver(ctx, program))
-                val sf  = new TimeoutSolverFactory(sf1, 10L)
-                val out = SimpleRewriter.simplify(sf)(ex, Seq())
-                out._1
-
-              case _ => ex
-            }
-            if (rl.toString != ex.toString) {
-              rec_simp(rl, count - 1)
-            }
-            else ex
-          }
-        }
-
         val ss_svc = cap match {
           case Some((program, ctx)) => {
             reporter.info("Simplify: \n" + svc + "\n======")
@@ -126,7 +107,41 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
               for (ru <- rus) SimpleRewriter.addRewriteRule(ru)
             }
 
-            val ss_svc_temp = rec_simp(svc)
+            //println("Using simplifier")
+            SimpleRewriter.startTimer
+
+            class SilentReporter extends DefaultReporter(Settings()) {
+              override def output(msg: String) : Unit = { }
+            }
+
+            val ctx_wo_filter = LeonContext(new SilentReporter, ctx.interruptManager, ctx.settings, Seq(), Seq(), ctx.timers)
+            val sf1 = SolverFactory( () => new UninterpretedZ3Solver(ctx_wo_filter, program))
+            val sf  = new TimeoutSolverFactory(sf1, 10L)
+            val simp_solver = SimpleSolverAPI(sf)
+
+            def rec_simp(ex: Expr, count: Int = 5): Expr = { if (count == 0) println("Too much recusive")
+              if (count == 0) ex else {
+                val rl = cap match {
+                  case Some((program,ctx)) =>
+
+                    val out = SimpleRewriter.simplifyWithSolver(simp_solver)(ex, Seq())
+                    if (out._2 == SIMP_SUCCESS())
+                      out._1
+                    else ex
+
+                  case _ => ex
+                }
+                if (rl.toString != ex.toString) {
+                  rec_simp(rl, count - 1)
+                }
+                else ex
+              }
+            }
+
+            val ss_svc_temp1 = rec_simp(svc)
+
+            /* If simplied expr is too long (8 times longer than original expr) , back to original expr */
+            val ss_svc_temp = if (ss_svc_temp1.toString.size > 8 * svc.toString.size) svc else ss_svc_temp1
             SimpleRewriter.pop() // Reset status as before filtering
 
             reporter.info("Our output \n============\n"  +ss_svc_temp.toString + "\n=============\n")
@@ -253,21 +268,16 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
     def isFlagTurnOn(f: String, ctx: LeonContext): Boolean = {
       for (op <- ctx.options) {
         op match {
-          case LeonFlagOption(f, v) => return v
+          case LeonFlagOption(f1, v) if f == f1  => return v 
           case _ =>
         }
       }
       false
     }
 
-    class SilentReporter extends DefaultReporter(Settings()) {
-      override def output(msg: String) : Unit = { }
-    }
-
     SimpleRewriter.clearRules
     SimpleRewriter.setReporter(reporter)
-    val ctx_wo_filter = LeonContext(new SilentReporter, ctx.interruptManager, ctx.settings, Seq(), Seq(), ctx.timers)
-    val isNotSimp = (isFlagTurnOn("codegen", ctx) || isFlagTurnOn("feelinglucky", ctx) || isFlagTurnOn("evalground", ctx))
+    val isNotSimp = (isFlagTurnOn("codegen", ctx) || isFlagTurnOn("evalground", ctx))
     if  (!isNotSimp) {
 
       /*
