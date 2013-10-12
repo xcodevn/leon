@@ -235,9 +235,20 @@ object SimpleRewriter extends Rewriter {
   }
 
   def simplifyWithSolver(sf: SimpleSolverAPI)(old_expr: Expr, proofContext: Seq[Expr]): (Expr, SIMPRESULT) = {
-    // println("Simplify: " + expr.toString)
+    // println("Simplify: " + old_expr.toString)
     // val solver = SimpleSolverAPI(sf)
     val (expr,rl) = old_expr match {
+      case t @ CaseClassInstanceOf(cd, ex) => {
+        val (e, r) = simplifyWithSolver(sf)(ex, proofContext)
+        e match {
+          case CaseClass(ccd, e1) => {
+            val cd1 = classDefToClassType(cd)
+            val cd2 = classDefToClassType(ccd)
+            if (isSubtypeOf(cd2, cd1)) (BooleanLiteral(true), r) else (BooleanLiteral(false), r)
+          }
+          case _ => (CaseClassInstanceOf(cd, e), r)
+        }
+      }
       case Implies(e1, e2) => {
         val (ex, rl) = simplifyWithSolver(sf)(e2, proofContext)
         (Implies(e1, ex).setType(old_expr.getType), rl)
@@ -332,15 +343,37 @@ object SimpleRewriter extends Rewriter {
           }
         }
 
+        // println("pC.S " + proofContext.size)
         val realConds = conds.filter(!isSubSimplify(_)).map(cond => instantiate(cond, m))
-        // println("Real conds : " + realConds)
+        // println ("real conds " + realConds)
+        val simplified_realConds = realConds.map(x => {
+          // println("Begin s " + x)
+          SimpleRewriter.push()
+          // SimpleRewriter.clearRules  // why we have to clear ?
+          val (eee, rll) = simplifyWithSolver(sf)(x, Seq())
+          SimpleRewriter.pop()
+          // println("End s " + eee)
+          eee
+
+        })
+        // println("pC.S " + proofContext.size)
         val rl = try {
-          if (realConds.forall(x => x == BooleanLiteral(true))) (Some(false), 1)
+          if (simplified_realConds.forall(x => x == BooleanLiteral(true))) (Some(false), 1)
+          else if (!simplified_realConds.forall(x => ! (x == BooleanLiteral(false)))) (Some(true), 1)
           else if (proofContext.size > 0) {
-            reporter.debug("check SAT " + Not(And(realConds)).toString + " with context " + proofContext.toString)
-            sf.solveSAT(And(Seq(Not(And(realConds))) ++ proofContext)) 
+            // println("check SAT " + Not(And(realConds)).toString + " with context " + proofContext.toString)
+            // val rl = sf.solveSAT(And(Seq(Not(And(realConds))) ++ proofContext)) 
+            val rl = (Some(true), 2)
+            /*
+            rl match {
+              case (Some(false), _) => println("check SAT TRUE " + realConds + " with proof " + proofContext)
+              case _ => println("check SAT FALSE")
+            }
+            */
+            rl
           } else (None, 2)
         } catch { case _ : Throwable => return (expr, SIMP_FAIL("Solver does not know expression")) }
+        // println("rl " + rl)
 
         rl match {
           case (Some(false),_)  =>

@@ -31,24 +31,18 @@ object Nat {
   } holds
 
 
-  @lemma
-  @induct
-  @depend()
+  @lemma @induct @depend()
   def plus_zero_lemma(a: Nat): Boolean = {
     plus(a, Zero()) == a
   } holds
 
   def three_odd_lemma() = {isOdd(int2Nat(2)) } holds
-  @lemma
-  @induct
-  @depend()
+  @lemma @induct @depend()
   def sub_zero_lemma(a: Nat): Boolean = {
     sub(a, Zero()) == a
   } holds
 
-  @lemma
-  @induct
-  @depend()
+  @lemma @induct @depend()
   def assoc_plus_lemma(a: Nat, b: Nat, c: Nat): Boolean = {
     plus(a, plus(b, c)) == plus(plus(a, b), c)
   } holds
@@ -60,23 +54,17 @@ object Nat {
 
   def one() = Succ(Zero())
 
-  @lemma
-  @induct
-  @depend()
+  @lemma @induct @depend()
   def plusOne_lemma1(a: Nat): Boolean = {
     Succ(a) == plus(one(), a)
   } holds
 
-  @lemma
-  @induct
-  @depend()
+  @lemma @induct @depend()
   def plusOne_lemma2(a: Nat): Boolean = {
     Succ(a) == plus(a, one())
   } holds
 
-  @lemma
-  @induct
-  @depend()
+  @lemma @depend()
   def plus_lemma(a: Nat, b: Nat, c: Nat): Boolean = {
     require (a == b)
     plus(a, c) == plus(b, c)

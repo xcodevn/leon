@@ -226,7 +226,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
 
   def createTestcase(ctx: LeonContext, rp: VerificationReport) = {
     def infoLine(vc : VerificationCondition) : String = {
-      "%-25s %-9s %9s %-8s %-10s %-7s".format(
+      "%-25s %-9s %9s %-8s %-10s".format(
         vc.funDef.id.toString, 
         vc.kind,
         vc.posInfo,

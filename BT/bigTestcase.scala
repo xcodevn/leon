@@ -154,7 +154,7 @@ object BT {
     plus(a, one()) == Succ(a)
   } holds
 
-  @lemma @induct @depend()
+  @lemma @depend()
   def plus_lemma(a: Nat, b: Nat, c: Nat): Boolean = {
     require (a == b)
     plus(a, c) == plus(b, c)

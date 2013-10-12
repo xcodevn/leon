@@ -1,6 +1,6 @@
-training:false
-appnil                    postcond.           valid    induction         
-appnil                    postcond.           valid    induction         
-app_assoc                 postcond.           valid    induction         
-app_assoc                 postcond.           valid    induction         
-rev_rev_rec               postcond.           valid               Z3-f   
+training:false timeout:1
+appnil                    postcond.           valid    induction 
+appnil                    postcond.           valid    induction 
+app_assoc                 postcond.           valid    induction 
+app_assoc                 postcond.           valid    induction 
+rev_rev_rec               postcond.           valid              

@@ -1,9 +1,9 @@
 training:false timeout:1
-sum_lemma                 postcond.           valid                      
-plus_zero_lemma           postcond.           valid    induction         
-plus_zero_lemma           postcond.           valid    induction         
-zero_plus_lemma           postcond.           valid               Z3-f   
-succ_plus_lemma           postcond.           valid    induction         
-succ_plus_lemma           postcond.           valid    induction         
-swap_plus_lemma           postcond.           valid    induction         
-swap_plus_lemma           postcond.           valid    induction         
+sum_lemma                 postcond.           valid              
+plus_zero_lemma           postcond.           valid    induction 
+plus_zero_lemma           postcond.           valid    induction 
+zero_plus_lemma           postcond.           valid              
+succ_plus_lemma           postcond.           valid    induction 
+succ_plus_lemma           postcond.           valid    induction 
+swap_plus_lemma           postcond.           valid    induction 
+swap_plus_lemma           postcond.           valid    induction 

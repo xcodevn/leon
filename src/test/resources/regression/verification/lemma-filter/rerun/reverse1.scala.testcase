@@ -1,9 +1,9 @@
 training:false timeout:1
-appnil_lemma              postcond.           valid    induction         
-appnil_lemma              postcond.           valid    induction         
-app_assoc_lemma           postcond.           valid    induction         
-app_assoc_lemma           postcond.           valid    induction         
-rev_app_lemma             postcond.           valid    induction         
-rev_app_lemma             postcond.           valid    induction         
-rev_rev_lemma             postcond.           valid    induction         
-rev_rev_lemma             postcond.           valid    induction         
+appnil_lemma              postcond.           valid    induction 
+appnil_lemma              postcond.           valid    induction 
+app_assoc_lemma           postcond.           valid    induction 
+app_assoc_lemma           postcond.           valid    induction 
+rev_app_lemma             postcond.           valid    induction 
+rev_app_lemma             postcond.           valid    induction 
+rev_rev_lemma             postcond.           valid    induction 
+rev_rev_lemma             postcond.           valid    induction 

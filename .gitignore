@@ -21,5 +21,6 @@ src/main/scala/leon/codegen/runtime
 last.log
 
 # xcodevn
-log.txt
+log
+log.*
 unmanaged/common/MaSh/.mash/

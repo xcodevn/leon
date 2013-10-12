@@ -31,12 +31,13 @@ object Rules {
     rewriter.addRewriteRule(RewriteRule("If_P", Seq(cond), iteExpr, e1,10))
     rewriter.addRewriteRule(RewriteRule("If_Not_P", Seq(Not(cond)), iteExpr, e2, 10))
     rewriter.addRewriteRule(RewriteRule("Equal_ID", Seq(), Equals(e1,e1), truee, 10))
-    rewriter.addRewriteRule(RewriteRule("Equal_True", Seq(Equals(e1, e2)), Equals(e1,e2), truee, 10))
-    rewriter.addRewriteRule(RewriteRule("Not_Equal_False", Seq(Not(Equals(e1, e2))), Not(Equals(e1,e2)), truee,10))
-    rewriter.addRewriteRule(RewriteRule("Not_Equal_False", Seq(Equals(e1, e2)), Not(Equals(e1,e2)), falsee,10))
+    // rewriter.addRewriteRule(RewriteRule("Equal_True", Seq(Equals(e1, e2)), Equals(e1,e2), truee, 10))
+    // rewriter.addRewriteRule(RewriteRule("Not_Equal_False", Seq(Not(Equals(e1, e2))), Not(Equals(e1,e2)), truee,10))
+    // rewriter.addRewriteRule(RewriteRule("Not_Equal_False", Seq(Equals(e1, e2)), Not(Equals(e1,e2)), falsee,10))
     rewriter.addRewriteRule(RewriteRule("Imply_Local_Assumtion", Seq(Implies(e1,Equals(e2, rve2))), Implies(e1,e2), Implies(e1, rve2), 10))
     // rewriter.addRewriteRule(RewriteRule("If_Strong_Cong", Seq(Equals(p, rvp), Implies(cond,Equals(e1, rve1)), Implies(Not(cond),Equals(e2, rve2))), IfExpr(p, e1,e2), IfExpr(rvp, rve1, rve2), 10))
 
+    /* Unknown :|
     rewriter.addRewriteRule(RewriteRule("Int_GreaterThan", Seq(GreaterThan(n1, n2)), GreaterThan(n1,n2), truee,10))
     rewriter.addRewriteRule(RewriteRule("Int_Not_GreaterThan", Seq(Not(GreaterThan(n1, n2))), GreaterThan(n1,n2), falsee,10))
     rewriter.addRewriteRule(RewriteRule("Int_LessThan", Seq(LessThan(n1, n2)), LessThan(n1,n2), truee,10))
@@ -45,6 +46,7 @@ object Rules {
     rewriter.addRewriteRule(RewriteRule("Int_GreaterEqual", Seq(GreaterEquals(n1, n2)), GreaterEquals(n1,n2), truee,10))
     rewriter.addRewriteRule(RewriteRule("Int_Not_LessEqual", Seq(Not(LessEquals(n1, n2))), LessEquals(n1,n2), falsee,10))
     rewriter.addRewriteRule(RewriteRule("Int_Not_Greaterqual", Seq(Not(GreaterEquals(n1, n2))), GreaterEquals(n1,n2), falsee,10))
+    */
   }
 
   val m: MutableMap[Identifier, RewriteVariable] = MutableMap.empty

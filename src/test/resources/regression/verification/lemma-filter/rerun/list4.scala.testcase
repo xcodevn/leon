@@ -1,10 +1,10 @@
-filter:MePo training:false
-appnil                    postcond.           valid    induction         
-appnil                    postcond.           valid    induction         
-app_assoc                 postcond.           valid    induction         
-app_assoc                 postcond.           valid    induction         
-odd_sum_lemma             postcond.           valid               Z3-f   
-rev_app0                  postcond.           valid    induction  Z3-f   
-rev_app0                  postcond.           valid    induction  Z3-f   
-rev_app                   postcond.           valid    induction  Z3-f   
-rev_app                   postcond.           valid    induction  Z3-f   
+training:false timeout:1
+appnil                    postcond.           valid    induction 
+appnil                    postcond.           valid    induction 
+app_assoc                 postcond.           valid    induction 
+app_assoc                 postcond.           valid    induction 
+odd_sum_lemma             postcond.           valid              
+rev_app0                  postcond.           valid    induction 
+rev_app0                  postcond.           valid    induction 
+rev_app                   postcond.           unknown  induction 
+rev_app                   postcond.           unknown  induction 

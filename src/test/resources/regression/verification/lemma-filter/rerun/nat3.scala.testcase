@@ -1,4 +1,4 @@
 training:false timeout:1
-assoc_plus_lemma          postcond.           valid    induction         
-assoc_plus_lemma          postcond.           valid    induction         
-three_odd_lemma           postcond.           valid               Z3-f   
+assoc_plus_lemma          postcond.           valid    induction 
+assoc_plus_lemma          postcond.           valid    induction 
+three_odd_lemma           postcond.           valid              

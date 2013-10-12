@@ -1,21 +1,20 @@
 training:false timeout:1
-sum_lemma                 postcond.           valid               Z3-f   
-plus_zero_lemma           postcond.           valid    induction         
-plus_zero_lemma           postcond.           valid    induction         
-sub_zero_lemma            postcond.           valid    induction  Z3-f   
-sub_zero_lemma            postcond.           valid    induction  Z3-f   
-assoc_plus_lemma          postcond.           valid    induction         
-assoc_plus_lemma          postcond.           valid    induction         
-zero_sub_lemma            postcond.           valid               Z3-f   
-one                       postcond.           valid               Z3-f   
-plusOne_lemma1            postcond.           valid    induction         
-plusOne_lemma1            postcond.           valid    induction         
-plusOne_lemma2            postcond.           valid    induction  Z3-f   
-plusOne_lemma2            postcond.           valid    induction         
-plus_lemma                postcond.           valid    induction         
-plus_lemma                postcond.           valid    induction         
-swap_plus_lemma           postcond.           unknown                    
-three_odd_lemma1          postcond.           invalid             Z3-f   
-three_odd_lemma2          postcond.           valid               Z3-f   
-sumOdd_lemma              postcond.           valid    induction         
-sumOdd_lemma              postcond.           valid    induction         
+sum_lemma                 postcond.           valid              
+plus_zero_lemma           postcond.           valid    induction 
+plus_zero_lemma           postcond.           valid    induction 
+sub_zero_lemma            postcond.           valid    induction 
+sub_zero_lemma            postcond.           valid    induction 
+assoc_plus_lemma          postcond.           valid    induction 
+assoc_plus_lemma          postcond.           valid    induction 
+zero_sub_lemma            postcond.           valid              
+one                       postcond.           valid              
+plusOne_lemma1            postcond.           valid    induction 
+plusOne_lemma1            postcond.           valid    induction 
+plusOne_lemma2            postcond.           valid    induction 
+plusOne_lemma2            postcond.           valid    induction 
+plus_lemma                postcond.           valid              
+swap_plus_lemma           postcond.           unknown            
+three_odd_lemma1          postcond.           invalid            
+three_odd_lemma2          postcond.           valid              
+sumOdd_lemma              postcond.           valid    induction 
+sumOdd_lemma              postcond.           valid    induction 
