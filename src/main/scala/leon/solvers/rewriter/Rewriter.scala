@@ -38,7 +38,12 @@ abstract class Rewriter {
 
   def TIMEOUT = 1000 /* default is 1 sec */
 
-  def isTimeout = ( System.currentTimeMillis - t > TIMEOUT ) && (t != -1)
+  private var doTimeout: Boolean = true
+
+  def disableTimeout() = { doTimeout = false }
+  def enableTimeout()  = { doTimeout = true  }
+
+  def isTimeout = ( System.currentTimeMillis - t > TIMEOUT ) && (t != -1) && doTimeout
 
   def push() = {
     stack = (MutableMap() ++ rules) :: stack 
@@ -267,7 +272,7 @@ object SimpleRewriter extends Rewriter {
 
     if (rl != SIMP_SUCCESS()) return (expr, rl)
 
-    /* We only check timeout at this point */
+    /* We check timeout at this point */
     if (isTimeout) {
       reporter.debug("Simplify TIMEOUT")
       return (expr, rl)
@@ -362,7 +367,7 @@ object SimpleRewriter extends Rewriter {
 
                   reporter.debug("Cond " + new_conds1)
                   SimpleRewriter.push()
-                  for (r <- findingRule(new_conds1)) SimpleRewriter.addRewriteRule(r)
+                  SimpleRewriter.clearRules /* We only use translation rules */
 
                   var extraConds = Seq[Expr]()
                   var invExtraConds = Seq[Expr]()
@@ -385,13 +390,25 @@ object SimpleRewriter extends Rewriter {
                   }
 
                   for (r <- findingRule(And(extraConds))) SimpleRewriter.addRewriteRule(r)
-
-                  val (s_lhs11, rl1) = simplifyWithSolver(sf)(new_lhs1, extraConds ++ Seq(new_conds1) ++ proofContext)
+                  /* Convert into new form */
+                  disableTimeout()
+                  val (s_lhs111, rl11) = simplifyWithSolver(sf)(new_lhs1, Seq())
+                  enableTimeout()
                   SimpleRewriter.pop()
 
+                  /* Real simplify */
                   SimpleRewriter.push()
+                  for (r <- findingRule(new_conds1)) SimpleRewriter.addRewriteRule(r)
+                  val (s_lhs11, rl1) = simplifyWithSolver(sf)(s_lhs111, extraConds ++ Seq(new_conds1) ++ proofContext)
+                  SimpleRewriter.pop()
+
+                  /* Convert into original form */
+                  SimpleRewriter.push()
+                  SimpleRewriter.clearRules             /* We don't want any other rules effect this process */
+                  disableTimeout()
                   for (r <- findingRule(And(invExtraConds))) SimpleRewriter.addRewriteRule(r)
-                  val (s_lhs12, rl2) = simplifyWithSolver(sf)(s_lhs11, invExtraConds ++ Seq(new_conds1) ++ proofContext)
+                  val (s_lhs12, rl2) = simplifyWithSolver(sf)(s_lhs11, Seq())
+                  enableTimeout()
                   SimpleRewriter.pop()
                   // println("Add new elem: "+ (id, s_lhs1))
                   curVal + (id -> s_lhs12)
