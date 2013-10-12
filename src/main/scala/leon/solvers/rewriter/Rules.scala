@@ -65,7 +65,7 @@ object Rules {
   }
 
 
-  def convert2Pattern(e: Expr, s: Set[Variable] = Set()): Expr = {
+  def convert2Pattern(e: Expr, s: Set[Variable] = Set(), createNewVar: Boolean = true): Expr = {
 
     def toRewriteVariable(x: Variable): RewriteVariable = {
       val Variable(id) = x
@@ -79,6 +79,8 @@ object Rules {
       case Variable(id) if m.contains(id) => {
         m(id)
       }
+
+      case v @ Variable(id) if ! createNewVar => throw new Throwable("Don't allow create new variable")
 
       case v @ Variable(id) => {
         val rl = toRewriteVariable(v)
@@ -110,7 +112,13 @@ object Rules {
 
   def createRuleWithDisableVars(e1: Expr, e2: Expr, s: Set[Variable], w: Int) = {
     m.clear()
-    RewriteRule("Rule_Disable_Vars", Seq(), convert2Pattern(e1, s), convert2Pattern(e2, s), w)
+    try {
+      val ex1 = convert2Pattern(e1, s)
+      val ex2 = convert2Pattern(e2, s, false)
+      RewriteRule("Inductive_Hypothesis", Seq(), ex1, ex2, w)
+    } catch {
+      case _ : Throwable => RewriteRule("Error variable in RHS not in LHS", Seq(), Error("LHS"), Error("RHS"), w)
+    }
   }
 
 
