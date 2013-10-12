@@ -334,12 +334,12 @@ object SimpleRewriter extends Rewriter {
 
         val realConds = conds.filter(!isSubSimplify(_)).map(cond => instantiate(cond, m))
         // println("Real conds : " + realConds)
-        reporter.debug("check SAT " + And(Seq(Not(And(realConds))) ++ proofContext))
         val rl = try {
-          if (proofContext.size > 0)
+          if (realConds.forall(x => x == BooleanLiteral(true))) (Some(false), 1)
+          else if (proofContext.size > 0) {
+            reporter.debug("check SAT " + Not(And(realConds)).toString + " with context " + proofContext.toString)
             sf.solveSAT(And(Seq(Not(And(realConds))) ++ proofContext)) 
-          else if (realConds.forall(x => x == BooleanLiteral(true))) (Some(false), 1)
-          else (None, 2)
+          } else (None, 2)
         } catch { case _ : Throwable => return (expr, SIMP_FAIL("Solver does not know expression")) }
 
         rl match {
