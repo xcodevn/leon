@@ -125,12 +125,10 @@ object Nat {
     isEven(plus(Succ(n1), Succ(n2)))
   } holds
   
-  
-  @depend("negative_lemma", "sol1")
   def sumOdd_lemma(n1: Nat, n2: Nat): Boolean = {
     require(isOdd(n1) && isOdd(n2))
     (n1, n2) match {
-      case (Succ(n10), Succ(n20)) => isEven(n10) && isEven(n20)
+      case (Succ(n10), Succ(n20)) => isEven(n10) && isEven(n20) && sol1(n10,n20) && succSuccPlus_lemma(n10,n20)
     }
   } ensuring {res => res && isEven(plus(n1, n2))}
 }

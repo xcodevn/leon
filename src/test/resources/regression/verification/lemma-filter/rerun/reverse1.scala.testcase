@@ -1,9 +1,9 @@
-filter:MePo training:false
-appnil_lemma              postcond.           valid    induction  Z3-f   
-appnil_lemma              postcond.           valid    induction  Z3-f   
-app_assoc_lemma           postcond.           valid    induction  Z3-f   
-app_assoc_lemma           postcond.           valid    induction  Z3-f   
-rev_app_lemma             postcond.           valid    induction  Z3-f   
-rev_app_lemma             postcond.           valid    induction  Z3-f   
-rev_rev_lemma             postcond.           valid    induction  Z3-f   
-rev_rev_lemma             postcond.           valid    induction  Z3-f   
+training:false timeout:1
+appnil_lemma              postcond.           valid    induction         
+appnil_lemma              postcond.           valid    induction         
+app_assoc_lemma           postcond.           valid    induction         
+app_assoc_lemma           postcond.           valid    induction         
+rev_app_lemma             postcond.           valid    induction         
+rev_app_lemma             postcond.           valid    induction         
+rev_rev_lemma             postcond.           valid    induction         
+rev_rev_lemma             postcond.           valid    induction         

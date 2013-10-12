@@ -1,6 +1,6 @@
 training:false
-appnil                    postcond.           valid    induction  Z3-f   
-appnil                    postcond.           valid    induction  Z3-f   
-app_assoc                 postcond.           valid    induction  Z3-f   
-app_assoc                 postcond.           valid    induction  Z3-f   
+appnil                    postcond.           valid    induction         
+appnil                    postcond.           valid    induction         
+app_assoc                 postcond.           valid    induction         
+app_assoc                 postcond.           valid    induction         
 rev_rev_rec               postcond.           valid               Z3-f   

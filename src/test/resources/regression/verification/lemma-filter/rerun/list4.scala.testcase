@@ -1,8 +1,8 @@
 filter:MePo training:false
-appnil                    postcond.           valid    induction  Z3-f   
-appnil                    postcond.           valid    induction  Z3-f   
-app_assoc                 postcond.           valid    induction  Z3-f   
-app_assoc                 postcond.           valid    induction  Z3-f   
+appnil                    postcond.           valid    induction         
+appnil                    postcond.           valid    induction         
+app_assoc                 postcond.           valid    induction         
+app_assoc                 postcond.           valid    induction         
 odd_sum_lemma             postcond.           valid               Z3-f   
 rev_app0                  postcond.           valid    induction  Z3-f   
 rev_app0                  postcond.           valid    induction  Z3-f   

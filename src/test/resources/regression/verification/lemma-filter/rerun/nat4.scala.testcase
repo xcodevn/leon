@@ -1,9 +1,9 @@
-filter:MePo training:false
-sum_lemma                 postcond.           valid               Z3-f   
-plus_zero_lemma           postcond.           valid    induction  Z3-f   
-plus_zero_lemma           postcond.           valid    induction  Z3-f   
+training:false timeout:1
+sum_lemma                 postcond.           valid                      
+plus_zero_lemma           postcond.           valid    induction         
+plus_zero_lemma           postcond.           valid    induction         
 zero_plus_lemma           postcond.           valid               Z3-f   
-succ_plus                 postcond.           valid    induction  Z3-f   
-succ_plus                 postcond.           valid    induction  Z3-f   
-swap_plus_lemma           postcond.           valid    induction  Z3-f   
-swap_plus_lemma           postcond.           valid    induction  Z3-f   
+succ_plus                 postcond.           valid    induction         
+succ_plus                 postcond.           valid    induction         
+swap_plus_lemma           postcond.           unknown  induction         
+swap_plus_lemma           postcond.           valid    induction         
