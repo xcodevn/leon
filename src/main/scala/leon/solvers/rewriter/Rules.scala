@@ -11,7 +11,7 @@ import purescala.TypeTrees._
 import purescala.Trees._
 import purescala.Extractors._
 import collection.mutable.MutableList
-import collection.mutable.{Map => MutableMap}
+import collection.mutable.{Map => MutableMap, HashMap}
 
 object Rules {
   def addDefaultRules(rewriter: Rewriter) {
@@ -112,62 +112,70 @@ object Rules {
   }
 
 
+  val cacheRules = new HashMap[ (FunDef, Program) , Seq[RewriteRule] ] ()
+
+  def clearCache() = cacheRules.clear
+
   def createFunctionRewriteRules(fd: FunDef, prog: Program): Seq[RewriteRule] = {
-      // for(funDef <- program.definedFunctions.toList.sortWith((fd1, fd2) => fd1 < fd2)) {
-      // println(funDef.id)
-    // Reset our map
-    m.clear()
-    if (fd.body.isDefined) {
-      val Some(imp1) = fd.body
-      val imp = expandLets(imp1)
-      if (!containsChooseExpr(imp)) {
-        // println(imp)
-        // println(funDef.args)
-        val fn = fd.id.toString     // function name
-        val lstArgs = fd.args.map(arg => { val VarDecl(v, ty) = arg; convert2Pattern(Variable(v).setType(ty)) }).toSeq
-        val fi = FunctionInvocation(fd, lstArgs)
-        val s0 = imp match { 
-          case MatchExpr(_, _) => {
-            def travelMatch(ex: Expr, c: Int, conds: Seq[Expr]): Seq[RewriteRule] = {
-              ex match {
-                case IfExpr(con, ex1, ex2) => {
-                  val rn = fn + "_simp" + c.toString
-                  val conn  = convert2Pattern(con)
-                  RewriteRule(rn, conn +: conds, fi, ex1, 5) +: travelMatch(ex2, c+1, Not(conn) +: conds)
+    cacheRules.getOrElse( (fd, prog), {
+      val rl = {
+        // Reset our map
+        m.clear()
+        if (fd.body.isDefined) {
+          val Some(imp1) = fd.body
+          val imp = expandLets(imp1)
+          if (!containsChooseExpr(imp)) {
+            // println(imp)
+            // println(funDef.args)
+            val fn = fd.id.toString     // function name
+            val lstArgs = fd.args.map(arg => { val VarDecl(v, ty) = arg; convert2Pattern(Variable(v).setType(ty)) }).toSeq
+            val fi = FunctionInvocation(fd, lstArgs)
+            val s0 = imp match { 
+              case MatchExpr(_, _) => {
+                def travelMatch(ex: Expr, c: Int, conds: Seq[Expr]): Seq[RewriteRule] = {
+                  ex match {
+                    case IfExpr(con, ex1, ex2) => {
+                      val rn = fn + "_simp" + c.toString
+                      val conn  = convert2Pattern(con)
+                      RewriteRule(rn, conn +: conds, fi, ex1, 5) +: travelMatch(ex2, c+1, Not(conn) +: conds)
+                    }
+                    case _ => Seq( RewriteRule(fn + "_simp" + c.toString, conds, fi, ex, 5) )
+                  } 
                 }
-                case _ => Seq( RewriteRule(fn + "_simp" + c.toString, conds, fi, ex, 5) )
-              } 
+                val ex = convert2Pattern(matchToIfThenElse(imp))
+                travelMatch(ex, 1, Seq())
+              }
+
+              case _ =>
+                if (!prog.isRecursive(fd)) {
+                  Seq(RewriteRule(fd.id.toString + "_simp",Seq(), fi, convert2Pattern(matchToIfThenElse(imp)),15))
+                } else Seq()
             }
-            val ex = convert2Pattern(matchToIfThenElse(imp))
-            travelMatch(ex, 1, Seq())
-          }
 
-          case _ =>
-            if (!prog.isRecursive(fd)) {
-              Seq(RewriteRule(fd.id.toString + "_simp",Seq(), fi, convert2Pattern(matchToIfThenElse(imp)),15))
+
+            // lemma rewrite rules
+            // println(fd)
+            val s1 = if(fd.annotations.contains("simp")) {
+              // println(fd)
+              val precond = fd.precondition match {
+                case Some(pre) => Seq(convert2Pattern(pre))
+                case _         => Seq()
+              }
+
+              convert2Pattern(imp) match {
+                case Equals(e1, e2) => Seq( RewriteRule(fn + "_simp_lemma", precond, e1, e2, 20) )
+                case Iff(e1, e2) => Seq( RewriteRule(fn + "_simp_lemma", precond, e1, e2, 20) )
+                case _ => Seq()
+              }
             } else Seq()
-        }
+            
 
-
-        // lemma rewrite rules
-        // println(fd)
-        val s1 = if(fd.annotations.contains("simp")) {
-          // println(fd)
-          val precond = fd.precondition match {
-            case Some(pre) => Seq(convert2Pattern(pre))
-            case _         => Seq()
-          }
-
-          convert2Pattern(imp) match {
-            case Equals(e1, e2) => Seq( RewriteRule(fn + "_simp_lemma", precond, e1, e2, 20) )
-            case Iff(e1, e2) => Seq( RewriteRule(fn + "_simp_lemma", precond, e1, e2, 20) )
-            case _ => Seq()
-          }
+            s0 ++ s1
+          } else Seq()
         } else Seq()
-        
-
-        s0 ++ s1
-      } else Seq()
-    } else Seq()
+      }
+      cacheRules( (fd, prog) ) = rl
+      rl
+    })
   }
 }
