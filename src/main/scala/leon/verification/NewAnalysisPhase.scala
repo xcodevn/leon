@@ -151,6 +151,16 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
           case _ => svc
         }
 
+        if (ss_svc == BooleanLiteral(true)) {
+          val t2 = System.nanoTime
+          val dt = ((t2 - t1) / 1000000) / 1000.0
+          reporter.info("==== VALID ====")
+          vcInfo.hasValue = true
+          vcInfo.value = Some(true)
+          vcInfo.solvedWith = None // For now, None mean simplier ;) 
+          vcInfo.time = Some(dt)
+          true
+        } else {
         // try all solvers until one returns a meaningful answer
         solvers.find(sf => {
           val s = sf.getNewSolver
@@ -206,6 +216,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
             }
             case _ =>
           }
+        }
       }
     }
 
