@@ -81,8 +81,7 @@ class NewTestFramework extends LeonTestSuite {
             vc.kind,
             vc.posInfo,
             vc.status,
-            vc.tacticStr,
-            vc.solverStr
+            vc.tacticStr
             )
         }
         val fmt = report.conditions.map(infoLine).toList

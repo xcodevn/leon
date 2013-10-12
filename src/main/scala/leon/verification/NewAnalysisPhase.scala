@@ -231,8 +231,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
         vc.kind,
         vc.posInfo,
         vc.status,
-        vc.tacticStr,
-        vc.solverStr
+        vc.tacticStr
         )
     }
     val opt = ctx.options.foldLeft ( List[String]() ) ( ( lst, op) => {
