@@ -118,7 +118,10 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
             // Filtering is right here
             // In fact, we re-order fun in the best way we can, not filtering at all :|
             // println("Before " + funLst.map(_.id.toString))
-            val lst = Filtering.filter(Seq(ft), svc, funLst.filter(e => e.isReach && e != funDef))
+            // val lst = Filtering.filter(Seq(ft), svc, funLst.filter(e => e.isReach && e != funDef))
+
+            /* We don't filter, because this is original implementation */
+            val lst= funLst.filter(e => e.isReach && e != funDef)
             // println("After  " + lst.map(_.id.toString))
 
             for (fun <- lst) {

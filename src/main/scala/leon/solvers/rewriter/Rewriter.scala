@@ -36,7 +36,7 @@ abstract class Rewriter {
    t = System.currentTimeMillis
   }
 
-  def TIMEOUT = 2000 /* default is 1 sec */
+  def TIMEOUT = 5000 /* default is 1 sec */
   private var doTimeout: Boolean = true
 
   def disableTimeout() = { doTimeout = false }
