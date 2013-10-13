@@ -30,6 +30,20 @@ abstract class Rewriter {
 
   private var stack : List[MutableMap[String, Seq[RewriteRule]]] = List(MutableMap())
 
+  var t: Long = -1
+
+  def startTimer = {
+   t = System.currentTimeMillis
+  }
+
+  def TIMEOUT = 2000 /* default is 1 sec */
+  private var doTimeout: Boolean = true
+
+  def disableTimeout() = { doTimeout = false }
+  def enableTimeout()  = { doTimeout = true  }
+
+  def isTimeout = ( System.currentTimeMillis - t > TIMEOUT ) && (t != -1) && doTimeout
+
   def push() = {
     stack = (MutableMap() ++ rules) :: stack 
     reporter.debug("Rewriter push()")
@@ -102,7 +116,6 @@ abstract class Rewriter {
       case t : IntLiteral => t.toString
       case t @ _ => t.getClass.getSimpleName
     }
-  "hello"
   }
 
   def hashRule(r: RewriteRule): String = exprHash(r.lhs)
@@ -217,31 +230,48 @@ object SimpleRewriter extends Rewriter {
 
   }
 
-  def simplify(sf: SolverFactory[Solver])(old_expr: Expr, proofContext: Seq[Expr]): (Expr, SIMPRESULT) = {
+  def simplifyWithSolver(sf: SimpleSolverAPI)(old_expr: Expr, proofContext: Seq[Expr]): (Expr, SIMPRESULT) = {
     // println("Simplify: " + expr.toString)
-    val solver = SimpleSolverAPI(sf)
+    // val solver = SimpleSolverAPI(sf)
     val (expr,rl) = old_expr match {
       case Implies(e1, e2) => {
-        val (ex, rl) = simplify(sf)(e2, proofContext)
-        (Implies(e1, ex).setType(old_expr.getType), SIMP_SUCCESS())
+        val (ex, rl) = simplifyWithSolver(sf)(e2, proofContext)
+        (Implies(e1, ex).setType(old_expr.getType), rl)
       }
 
       case UnaryOperator(t, recons) => {
-        val (ex, rl) = simplify(sf)(t, proofContext)
-        (recons(ex).setType(old_expr.getType), SIMP_SUCCESS())
+        val (ex, rl) = simplifyWithSolver(sf)(t, proofContext)
+        (recons(ex).setType(old_expr.getType), rl)
       }
 
       case BinaryOperator(t, y, recons) => {
-        val (ex1, rl1) = simplify(sf)(t, proofContext)
-        val (ex2, rl2) = simplify(sf)(y, proofContext)
-        (recons(ex1, ex2).setType(old_expr.getType), SIMP_SUCCESS())
+        val (ex1, rl1) = simplifyWithSolver(sf)(t, proofContext)
+        val (ex2, rl2) = simplifyWithSolver(sf)(y, proofContext)
+        val rl = if (rl1 == SIMP_SUCCESS() && rl2 == SIMP_SUCCESS() ) SIMP_SUCCESS() else SIMP_FAIL("Binary simp failed")
+        (recons(ex1, ex2).setType(old_expr.getType), rl)
       }
 
       case n @ NAryOperator(args, recons) => {
-        (recons(args.map ( ar => { val (ex, rl) = simplify(sf)(ar, proofContext); ex } )).setType(old_expr.getType), SIMP_SUCCESS())
+        var isSucc = true
+        val nargs = for (ar <- args) yield {
+          val (ex, rl) = simplifyWithSolver(sf)(ar, proofContext)
+          if (rl == SIMP_SUCCESS()) ex 
+          else { isSucc= false; ex}
+        }
+
+        if (isSucc) (recons(nargs).setType(old_expr.getType), SIMP_SUCCESS())
+        else (recons(nargs).setType(old_expr.getType), SIMP_FAIL("FAIL"))
       }
 
       case _ => (old_expr, SIMP_SUCCESS())
+    }
+
+    if (rl != SIMP_SUCCESS()) return (expr, rl)
+
+    /* We only check timeout at this point */
+    if (isTimeout) {
+      reporter.debug("Simplify TIMEOUT")
+      return (expr, rl)
     }
 
     def rewriteVariablesOf(e: Expr): Set[Identifier] = e match {
@@ -302,8 +332,8 @@ object SimpleRewriter extends Rewriter {
         // println("Real conds : " + realConds)
         reporter.debug("check SAT " + And(Seq(Not(And(realConds))) ++ proofContext))
         val rl = try {
-          solver.solveSAT(And(Seq(Not(And(realConds))) ++ proofContext)) 
-        } catch { case _ : Throwable => (Some(true), true) }
+            sf.solveSAT(And(Seq(Not(And(realConds))) ++ proofContext)) 
+        } catch { case _ : Throwable => return (expr, SIMP_FAIL("Solver does not know expression")) }
 
         rl match {
           case (Some(false),_)  =>
@@ -330,7 +360,8 @@ object SimpleRewriter extends Rewriter {
 
                   reporter.debug("Cond " + new_conds1)
                   SimpleRewriter.push()
-                  for (r <- findingRule(new_conds1)) SimpleRewriter.addRewriteRule(r)
+
+                  SimpleRewriter.clearRules /* We only use translation rules */
 
                   var extraConds = Seq[Expr]()
                   var invExtraConds = Seq[Expr]()
@@ -353,13 +384,25 @@ object SimpleRewriter extends Rewriter {
                   }
 
                   for (r <- findingRule(And(extraConds))) SimpleRewriter.addRewriteRule(r)
+                  /* Convert into new form */
+                  disableTimeout()
+                  val (s_lhs111, rl11) = simplifyWithSolver(sf)(new_lhs1, Seq())
+                  enableTimeout()
+                  SimpleRewriter.pop()
 
-                  val (s_lhs11, rl1) = simplify(sf)(new_lhs1, extraConds ++ Seq(new_conds1) ++ proofContext)
+                  /* Real simplify */
+                  SimpleRewriter.push()
+                  for (r <- findingRule(new_conds1)) SimpleRewriter.addRewriteRule(r)
+                  val (s_lhs11, rl1) = simplifyWithSolver(sf)(s_lhs111, extraConds ++ Seq(new_conds1) ++ proofContext)
                   SimpleRewriter.pop()
 
                   SimpleRewriter.push()
+                  SimpleRewriter.clearRules             /* We don't want any other rules effect this process */
+                  disableTimeout()
                   for (r <- findingRule(And(invExtraConds))) SimpleRewriter.addRewriteRule(r)
-                  val (s_lhs12, rl2) = simplify(sf)(s_lhs11, invExtraConds ++ Seq(new_conds1) ++ proofContext)
+                  val (s_lhs12, rl2) = simplifyWithSolver(sf)(s_lhs11, Seq())
+                  enableTimeout()
+
                   SimpleRewriter.pop()
                   // println("Add new elem: "+ (id, s_lhs1))
                   curVal + (id -> s_lhs12)
@@ -377,4 +420,9 @@ object SimpleRewriter extends Rewriter {
 
     (expr, rl)
   }
+
+  def simplify(sf: SolverFactory[Solver])(expr: Expr, proofContext: Seq[Expr]): (Expr, SIMPRESULT) = {
+    simplifyWithSolver(SimpleSolverAPI(sf))(expr, proofContext)
+  }
+
 }

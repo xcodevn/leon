@@ -89,7 +89,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
         reporter.debug("Verification condition (" + vcInfo.kind + ") for ==== " + funDef.id + " ====")
         reporter.debug(simplifyLets(vc))
         val svc = expandLets(vc)
-
+        
         def rec_simp(ex: Expr, count: Int = 5): Expr = {
           if (count == 0) println("Too much recusive")
           if (count == 0) ex else {
@@ -126,7 +126,10 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
               for (ru <- rus) SimpleRewriter.addRewriteRule(ru)
             }
 
-            val ss_svc_temp = rec_simp(svc)
+            SimpleRewriter.startTimer
+
+            val ss_svc_temp1 = rec_simp(svc)
+            val ss_svc_temp = if (ss_svc_temp1.toString.size > 8 * svc.toString.size) svc else ss_svc_temp1
             SimpleRewriter.pop() // Reset status as before filtering
 
             reporter.info("Our output \n============\n"  +ss_svc_temp.toString + "\n=============\n")
