@@ -41,7 +41,7 @@ class MePoFilter (context : LeonContext, prog: Program) extends Filter {
    * Hmmm, I don't think this function returns a VC, I want it return the body of function (property), So I can unfold it and then extract features
    */
   def genVC(funDef: FunDef): Expr = {
-    context.reporter.info("FIXME: We need a real VC, not just function's body")
+    // context.reporter.info("FIXME: We need a real VC, not just function's body")
     def getImple() = funDef.implementation match {
       case Some(r) => r
       case _ => Error("Error")
@@ -101,19 +101,19 @@ class MePoFilter (context : LeonContext, prog: Program) extends Filter {
     val cs = getSymbolSet(c)
     val size_r = (cs & rs).size.toDouble
 
-    context.reporter.info(cs.toString + " has mark " + "%.2f".format(size_r /cs.size) + " in set "  + rs.toString)
+    // context.reporter.info(cs.toString + " has mark " + "%.2f".format(size_r /cs.size) + " in set "  + rs.toString)
     size_r / cs.size
   }
 
   def get_relevant_clauses(rs: Set[String], t: Set[(FunDef, Seq[Z3AST])], p: Double, num: Int): Set[(FunDef, Seq[Z3AST])] = {
-    context.reporter.info("Current MePo status: RS: %s, T: %s, P: %.2f".format(rs.toString, t.toSeq.map(p => {val (fd, ex) = p ; fd.id.name.toString} ), p))
+    // context.reporter.info("Current MePo status: RS: %s, T: %s, P: %.2f".format(rs.toString, t.toSeq.map(p => {val (fd, ex) = p ; fd.id.name.toString} ), p))
     val rel = t.filter( e => { val (fd, ex) = e; get_clause_mark(rs, ex) >= p } )
     val new_t = t.filterNot( e => { val (fd, ex) = e; get_clause_mark(rs, ex) >= p } )
     if (!rel.isEmpty) {
       val new_p = p + (1  - p) / CONST_C
       val new_rs = rs ++  rel.toSeq.foldLeft ( Set.empty[String] ) ( (set, p) => set ++ { val (fd, ex) = p; getSymbolSet(ex) } )
 
-      context.reporter.info("Added " + rel.map( p => {val (fd, seq) =p; fd.id.name.toString } ).toString + " into relevance set ")
+      // context.reporter.info("Added " + rel.map( p => {val (fd, seq) =p; fd.id.name.toString } ).toString + " into relevance set ")
 
       if (num - rel.size > 0) 
         rel ++ get_relevant_clauses(new_rs, new_t, new_p, num - rel.size)

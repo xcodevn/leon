@@ -19,7 +19,11 @@ case class SIMP_SAME()    extends SIMPRESULT
 case class SIMP_FAIL(msg: String) extends SIMPRESULT
 
 // FIXME: lhs: should be a PATTERN
-case class RewriteRule (val name: String, val conds: Seq[Expr], val lhs: Expr, val rhs: Expr, val weight: Int)
+case class RewriteRule (val name: String, val conds: Seq[Expr], val lhs: Expr, val rhs: Expr, val weight: Int) {
+  var isPermutation = false
+  def enablePermutation() = { isPermutation = true }
+  def disablePermutation() = { isPermutation = false }
+}
 
 //
 // This class is built base on Solver.scala
@@ -126,9 +130,10 @@ abstract class Rewriter {
 
   protected def rules = stack.head
   def resetRules = rules.clear
+
   def addRewriteRule(rule: RewriteRule) = {
     reporter.debug("Adding rewrite rule: ")
-    reporter.debug("Name: %s\nConds: %s\nLHS: %s\nRHS: %s".format(rule.name, rule.conds.toString, rule.lhs.toString, rule.rhs.toString))
+    reporter.debug("Name: %s\nConds: %s\nLHS: %s\nRHS: %s\nIs permutation: %s".format(rule.name, rule.conds.toString, rule.lhs.toString, rule.rhs.toString, rule.isPermutation))
     val str = hashRule(rule)
     val old_rule = rules.getOrElse(str, Seq[RewriteRule]())
     rules.update(str, old_rule :+ rule)
@@ -149,6 +154,21 @@ object TrivialRewriter2 extends Rewriter {
   }
 }
 object SimpleRewriter extends Rewriter {
+
+  def isPermutationRule(r: RewriteRule): Boolean = {
+    val m: MutableMap[Identifier, Expr] = MutableMap.empty
+    if (r.conds.size == 0)  {
+      /*val rl = */
+     exprMatch(r.lhs, r.rhs, m)
+      // println (" matching "  + r.lhs + " with  " + r.rhs + " result " + rl)
+      // rl
+    }
+    else false
+  }
+  override def addRewriteRule(rule: RewriteRule) = {
+    if (isPermutationRule(rule)) rule.enablePermutation
+    super.addRewriteRule(rule)
+  }
   def exprMatch(pattern: Expr, ex: Expr, map: MutableMap[Identifier, Expr]): Boolean = {
     def checkAndAdd(e: (Identifier,Expr)): Boolean = {
       if (map.contains(e._1)) {
@@ -173,7 +193,8 @@ object SimpleRewriter extends Rewriter {
 
 
     if (pattern.getType == typ) {
-      if (pattern.getClass != ex.getClass) {
+      if (pattern.getClass != ex.getClass || ex.isInstanceOf[RewriteVariable] ) {   
+        /* second case of OR is for permutation rewrite rule, if we have problem later, FIXME */
         pattern match {
           case RewriteVariable(id) => 
             checkAndAdd( (id,ex) )
@@ -238,6 +259,20 @@ object SimpleRewriter extends Rewriter {
     // println("Simplify: " + old_expr.toString)
     // val solver = SimpleSolverAPI(sf)
     val (expr,rl) = old_expr match {
+      case And(lst) => {
+        val (newlst, rllst) = lst.map(simplifyWithSolver(sf)(_, proofContext)).unzip
+        /* trying to simplify true, false cases */
+        val e = {
+          if (newlst.forall(e => e == BooleanLiteral(true))) BooleanLiteral(true)
+          else if (! newlst.forall(e => e != BooleanLiteral(false))) BooleanLiteral(false)
+          else And(newlst)
+        }
+
+        if (rllst.forall(_ == SIMP_SUCCESS()))
+          (e, SIMP_SUCCESS())
+        else (e, SIMP_FAIL("Fail"))
+      }
+
       case t @ CaseClassInstanceOf(cd, ex) => {
         val (e, r) = simplifyWithSolver(sf)(ex, proofContext)
         e match {
@@ -367,7 +402,8 @@ object SimpleRewriter extends Rewriter {
             /*
             rl match {
               case (Some(false), _) => println("check SAT TRUE " + realConds + " with proof " + proofContext)
-              case _ => println("check SAT FALSE")
+              case _ => println("check SAT FALSE " + realConds + " with proof " + proofContext)
+
             }
             */
             rl
@@ -450,8 +486,13 @@ object SimpleRewriter extends Rewriter {
             // println("New Map : " + newM+ " used for RHS : " + rhs)
             val new_rhs = instantiate(rhs, newM)
             // println("after instantiate " + rhs + " became " + new_rhs)
-            reporter.debug("By using rule: \n" + rule + "\nwe simplify \n====\n" + expr + "\n----\ninto\n----\n" + new_rhs + "\n====")
-            return (new_rhs, SIMP_SUCCESS())
+            if (!rule.isPermutation) {
+              reporter.debug("By using rule: \n" + rule + "\nwe simplify \n====\n" + expr + "\n----\ninto\n----\n" + new_rhs + "\n====")
+              return (new_rhs, SIMP_SUCCESS())
+            } else if (expr.toString < new_rhs.toString) {
+                reporter.debug("By using permutation rule: \n" + rule + "\nwe simplify \n====\n" + expr + "\n----\ninto\n----\n" + new_rhs + "\n====")
+                return (new_rhs, SIMP_SUCCESS())
+              }
           case _ => 
         }
       }

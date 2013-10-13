@@ -37,6 +37,7 @@ object Rules {
     rewriter.addRewriteRule(RewriteRule("Imply_Local_Assumtion", Seq(Implies(e1,Equals(e2, rve2))), Implies(e1,e2), Implies(e1, rve2), 10))
     // rewriter.addRewriteRule(RewriteRule("If_Strong_Cong", Seq(Equals(p, rvp), Implies(cond,Equals(e1, rve1)), Implies(Not(cond),Equals(e2, rve2))), IfExpr(p, e1,e2), IfExpr(rvp, rve1, rve2), 10))
 
+    rewriter.addRewriteRule(RewriteRule("Swap_Plus", Seq(), Plus(n1, n2), Plus(n2, n1),10))
     /* Unknown :|
     rewriter.addRewriteRule(RewriteRule("Int_GreaterThan", Seq(GreaterThan(n1, n2)), GreaterThan(n1,n2), truee,10))
     rewriter.addRewriteRule(RewriteRule("Int_Not_GreaterThan", Seq(Not(GreaterThan(n1, n2))), GreaterThan(n1,n2), falsee,10))
