@@ -35,9 +35,8 @@ class ExtendedInductionTactic(reporter: Reporter) extends InductionTactic(report
     }
   }
 
-  override def generatePostconditions(funDef: FunDef) : Seq[VerificationCondition] = {
+  def generateInductiveHypothesisRewriteRules(funDef: FunDef) : Seq[RewriteRule] = {
     assert(funDef.body.isDefined)
-    val defaultPost = super.generatePostconditions(funDef)
     firstAbsClassDef(funDef.args) match {
       case Some((classDef, arg)) =>
         val prec = funDef.precondition
@@ -50,7 +49,7 @@ class ExtendedInductionTactic(reporter: Reporter) extends InductionTactic(report
             Seq.empty
           case Some((pid, post)) =>
             val children = classDef.knownChildren
-            val conditionsForEachChild = (for (child <- classDef.knownChildren) yield (child match {
+            val rules: Seq[Seq[RewriteRule]] = (for (child <- classDef.knownChildren) yield (child match {
               case ccd @ CaseClassDef(id, prnt, vds) =>
                 val selectors = selectorsOfParentType(classDefToClassType(classDef), ccd, argAsVar)
                 // if no subtrees of parent type, assert property for base case
@@ -58,106 +57,30 @@ class ExtendedInductionTactic(reporter: Reporter) extends InductionTactic(report
                 val bodyAndPostForArg = Let(resFresh, body, replace(Map(Variable(pid) -> Variable(resFresh)), matchToIfThenElse(post)))
                 val withPrec = if (prec.isEmpty) bodyAndPostForArg else Implies(matchToIfThenElse(prec.get), bodyAndPostForArg)
 
-                val conditionForChild = 
-                  if (selectors.size == 0) 
-                    withPrec
-                  else {
-                    val inductiveHypothesis = (for (sel <- selectors) yield {
-                      val resFresh = FreshIdentifier("result", true).setType(body.getType)
-                      inductVars += argAsVar
-                      val nb = replace(Map(argAsVar -> sel), body)
-                      nb match {
-                        case Equals(e1, e2) if !funDef.hasPrecondition => SimpleRewriter.addRewriteRule(Rules.createRuleWithDisableVars(e1, e2, Set(argAsVar), 25))
-                        case _ =>
+                if (selectors.size == 0) 
+                  Seq()
+                else {
+                  val rs: Seq[Seq[RewriteRule]] = (for (sel <- selectors) yield {
+                    val resFresh = FreshIdentifier("result", true).setType(body.getType)
+                    inductVars += argAsVar
+                    val nb = replace(Map(argAsVar -> sel), body)
+                    nb match {
+                      case Equals(e1, e2) if !funDef.hasPrecondition => {
+                        Seq(Rules.createRuleWithDisableVars(e1, e2, Set(argAsVar), 25))
                       }
-                      val bodyAndPost = Let(resFresh, nb, replace(Map(Variable(pid) -> Variable(resFresh), argAsVar -> sel), matchToIfThenElse(post))) 
-
-                      val withPrec = if (prec.isEmpty) bodyAndPost else Implies(replace(Map(argAsVar -> sel), matchToIfThenElse(prec.get)), bodyAndPost)
-                      withPrec
-                    })
-                    Implies(And(inductiveHypothesis), withPrec)
-                  }
-                new VerificationCondition(Implies(CaseClassInstanceOf(ccd, argAsVar), conditionForChild), funDef, VCKind.Postcondition, this)
-              case _ => scala.sys.error("Abstract class has non-case class subtype.")
+                      case _ => Seq()
+                    }
+                  })
+                  rs.flatten
+                }
+              case _ => Seq()
             }))
-            conditionsForEachChild
+            rules.flatten
         }
 
-      case None =>
-        reporter.warning("Induction tactic currently supports exactly one argument of abstract class type")
-        defaultPost
-    }
-  }
-
-  override def generatePreconditions(function: FunDef) : Seq[VerificationCondition] = {
-    val defaultPrec = super.generatePreconditions(function)
-    firstAbsClassDef(function.args) match {
-      case Some((classDef, arg)) => {
-        val toRet = if(function.hasBody) {
-          val cleanBody = expandLets(matchToIfThenElse(function.body.get))
-
-          val allPathConds = collectWithPathCondition((t => t match {
-            case FunctionInvocation(fd, _) if(fd.hasPrecondition) => true
-            case _ => false
-          }), cleanBody)
-
-          def withPrec(path: Seq[Expr], shouldHold: Expr) : Expr = if(function.hasPrecondition) {
-            Not(And(And(matchToIfThenElse(function.precondition.get) +: path), Not(shouldHold)))
-          } else {
-            Not(And(And(path), Not(shouldHold)))
-          }
-
-          val conditionsForAllPaths : Seq[Seq[VerificationCondition]] = allPathConds.map(pc => {
-            val path : Seq[Expr] = pc._1
-            val fi = pc._2.asInstanceOf[FunctionInvocation]
-            val FunctionInvocation(fd, args) = fi
-
-            val conditionsForEachChild = (for (child <- classDef.knownChildren) yield (child match {
-              case ccd @ CaseClassDef(id, prnt, vds) => {
-                val argAsVar = arg.toVariable
-                val selectors = selectorsOfParentType(classDefToClassType(classDef), ccd, argAsVar)
-                
-                val prec : Expr = freshenLocals(matchToIfThenElse(fd.precondition.get))
-                val newLetIDs = fd.args.map(a => FreshIdentifier("arg_" + a.id.name, true).setType(a.tpe))
-                val substMap = Map[Expr,Expr]((fd.args.map(_.toVariable) zip newLetIDs.map(Variable(_))) : _*)
-                val newBody : Expr = replace(substMap, prec)
-                val newCall : Expr = (newLetIDs zip args).foldRight(newBody)((iap, e) => Let(iap._1, iap._2, e))
-
-                val toProve = withPrec(path, newCall)
-
-                val conditionForChild =
-                  if (selectors.isEmpty)
-                    toProve
-                  else {
-                    val inductiveHypothesis = (for (sel <- selectors) yield {
-                      val prec : Expr = freshenLocals(matchToIfThenElse(fd.precondition.get))
-                      val newLetIDs = fd.args.map(a => FreshIdentifier("arg_" + a.id.name, true).setType(a.tpe))
-                      val substMap = Map[Expr,Expr]((fd.args.map(_.toVariable) zip newLetIDs.map(Variable(_))) : _*)
-                      val newBody : Expr = replace(substMap, prec)
-                      val newCall : Expr = (newLetIDs zip args).foldRight(newBody)((iap, e) => Let(iap._1, iap._2, e))
-
-                      val toReplace = withPrec(path, newCall)
-                      inductVars += argAsVar
-                      replace(Map(argAsVar -> sel), toReplace)
-                    })
-                    Implies(And(inductiveHypothesis), toProve)
-                  }
-                new VerificationCondition(Implies(CaseClassInstanceOf(ccd, argAsVar), conditionForChild), function, VCKind.Precondition, this).setPosInfo(fi)
-              }
-              case _ => scala.sys.error("Abstract class has non-case class subtype")
-            }))
-            conditionsForEachChild
-          }).toSeq
-
-          conditionsForAllPaths.flatten
-        } else {
-          Seq.empty
-        }
-        toRet
-      }
       case None => {
         reporter.warning("Induction tactic currently supports exactly one argument of abstract class type")
-        defaultPrec
+        Seq()
       }
     }
   }

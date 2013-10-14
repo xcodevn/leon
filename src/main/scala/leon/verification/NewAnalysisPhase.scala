@@ -34,7 +34,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
   override def generateVerificationConditions(reporter: Reporter, program: Program, functionsToAnalyse: Set[String]): Map[FunDef, List[VerificationCondition]] = {
     val defaultTactic = new DefaultTactic(reporter)
     defaultTactic.setProgram(program)
-    val inductionTactic = new ExtendedInductionTactic(reporter)
+    val inductionTactic = new InductionTactic(reporter)
     inductionTactic.setProgram(program)
 
     var allVCs = Map[FunDef, List[VerificationCondition]]()
@@ -78,147 +78,164 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
       case _      => (new TrivialFilter, Seq())
     }
 
-    for((funDef, vcs) <- vcs.toSeq.sortWith((a,b) => a._1 < b._1)) {
-      funDef.isReach = true
-      for (vcInfo <- vcs if !interruptManager.isInterrupted()) {
-        val t1 = System.nanoTime
+    val lst =  ( for((funDef, vcs) <- vcs.toSeq.sortWith((a,b) => a._1 < b._1); vcInfo <- vcs) yield { 
+      (funDef, vcInfo)
+    }).par
 
-        val funDef = vcInfo.funDef
-        val vc = vcInfo.condition
+    lst.foreach( p => {
+      val (funDef, vcInfo) = p
+      val t1 = System.nanoTime
 
-        reporter.info("Now considering '" + vcInfo.kind + "' VC for " + funDef.id + "...")
-        reporter.debug("Verification condition (" + vcInfo.kind + ") for ==== " + funDef.id + " ====")
-        reporter.debug(simplifyLets(vc))
-        val svc = expandLets(vc)
+      // val funDef = vcInfo.funDef
+      val vc = vcInfo.condition
 
-        val ss_svc = cap match {
-          case Some((program, ctx)) => {
-            reporter.info("Simplify: \n" + svc + "\n======")
-            // Push
-            SimpleRewriter.push()
+      reporter.info("Now considering '" + vcInfo.kind + "' VC for " + funDef.id + "...")
+      reporter.debug("Verification condition (" + vcInfo.kind + ") for ==== " + funDef.id + " ====")
+      reporter.debug(simplifyLets(vc))
+      val svc = expandLets(vc)
 
-            // Filtering is right here
-            // In fact, we re-order fun in the best way we can, not filtering at all :|
-            // println("Before " + funLst.map(_.id.toString))
-            val lst = Filtering.filter(Seq(ft), svc, funLst.filter(e => e.isReach && e != funDef))
-            // println("After  " + lst.map(_.id.toString))
+      val ss_svc = cap match {
+        case Some((program, ctx)) => {
+          reporter.info("Simplify: \n" + svc + "\n======")
+          // Push
+          val simpleRewriter = new SimpleRewriter
+          if(funDef.annotations.contains("induct")) {
+            val iT = new ExtendedInductionTactic(reporter)
+            for (r <- iT.generateInductiveHypothesisRewriteRules(funDef)) simpleRewriter.addRewriteRule(r)
+          }
+          simpleRewriter.setReporter(reporter)
+          Rules.addDefaultRules(simpleRewriter)
 
-            for (fun <- lst) {
-              val rus = Rules.createFunctionRewriteRules(fun, program)
-              for (ru <- rus) SimpleRewriter.addRewriteRule(ru)
-            }
+          // Filtering is right here
+          // In fact, we re-order fun in the best way we can, not filtering at all :|
+          // println("Before " + funLst.map(_.id.toString))
+          val lst = Filtering.filter(Seq(ft), svc, funLst.filter(_ < funDef))
+          // println("After  " + lst.map(_.id.toString))
 
-            //println("Using simplifier")
-            SimpleRewriter.startTimer
-
-            class SilentReporter extends DefaultReporter(Settings()) {
-              override def output(msg: String) : Unit = { }
-            }
-
-            val ctx_wo_filter = LeonContext(new SilentReporter, ctx.interruptManager, ctx.settings, Seq(), Seq(), ctx.timers)
-            val sf = SolverFactory( () => new UninterpretedZ3Solver(ctx_wo_filter, program))
-            val simp_solver = SimpleSolverAPI(sf)
-
-            def rec_simp(ex: Expr, count: Int = 5): Expr = { if (count == 0) println("Too much recusive")
-              if (count == 0) ex else {
-                val rl = cap match {
-                  case Some((program,ctx)) =>
-
-                    val out = SimpleRewriter.simplifyWithSolver(simp_solver)(ex, Seq())
-                    if (out._2 == SIMP_SUCCESS())
-                      out._1
-                    else ex
-
-                  case _ => ex
-                }
-                if (rl.toString != ex.toString) {
-                  rec_simp(rl, count - 1)
-                }
-                else ex
-              }
-            }
-
-            val ss_svc_temp1 = rec_simp(svc)
-
-            /* If simplied expr is too long (8 times longer than original expr) , back to original expr */
-            val ss_svc_temp = if (ss_svc_temp1.toString.size > 8 * svc.toString.size) svc else ss_svc_temp1
-            SimpleRewriter.pop() // Reset status as before filtering
-
-            reporter.info("Our output \n============\n"  +ss_svc_temp.toString + "\n=============\n")
-            ss_svc_temp
+          for (fun <- lst) {
+            val rus = Rules.createFunctionRewriteRules(fun, program)
+            for (ru <- rus) simpleRewriter.addRewriteRule(ru)
           }
 
-          case _ => svc
+          //println("Using simplifier")
+          simpleRewriter.startTimer
+
+          class SilentReporter extends DefaultReporter(Settings()) {
+            override def output(msg: String) : Unit = { }
+          }
+
+          val ctx_wo_filter = LeonContext(new SilentReporter, ctx.interruptManager, ctx.settings, Seq(), Seq(), ctx.timers)
+          val sf = new SolverFactory[Solver] {
+            def getNewSolver() = { new UninterpretedZ3Solver(ctx_wo_filter, program) }
+          }
+          val simp_solver = SimpleSolverAPI(sf)
+
+          def rec_simp(ex: Expr, count: Int = 5): Expr = { if (count == 0) println("Too much recusive")
+            if (count == 0) ex else {
+              val rl = cap match {
+                case Some((program,ctx)) =>
+
+                  val out = simpleRewriter.simplifyWithSolver(simp_solver)(ex, Seq())
+                  if (out._2 == SIMP_SUCCESS())
+                    out._1
+                  else ex
+
+                case _ => ex
+              }
+              if (rl.toString != ex.toString) {
+                rec_simp(rl, count - 1)
+              }
+              else ex
+            }
+          }
+
+          val ss_svc_temp1 = rec_simp(svc)
+
+          /* If simplied expr is too long (8 times longer than original expr) , back to original expr */
+          val ss_svc_temp = if (ss_svc_temp1.toString.size > 8 * svc.toString.size) svc else ss_svc_temp1
+
+          reporter.info("Our output \n============\n"  +ss_svc_temp.toString + "\n=============\n")
+          ss_svc_temp
         }
 
-        if (ss_svc == BooleanLiteral(true)) {
+        case _ => svc
+      }
+
+      if (ss_svc == BooleanLiteral(true)) {
+        val t2 = System.nanoTime
+        val dt = ((t2 - t1) / 1000000) / 1000.0
+        reporter.info("==== VALID ====")
+        vcInfo.hasValue = true
+        vcInfo.value = Some(true)
+        vcInfo.solvedWith = None // For now, None mean simplier 
+        vcInfo.time = Some(dt)
+        true
+      } else {
+      // try all solvers until one returns a meaningful answer
+      /*
+      val solvers = Seq(
+      SolverFactory(() => new ExtendedFairZ3Solver(ctx, program))
+      }
+      */
+      solvers.find(sf => {
+        val s = sf.getNewSolver
+        try {
+          reporter.debug("Trying with solver: " + s.name)
+          if (s.isInstanceOf[ExtendedFairZ3Solver]) {
+            s.asInstanceOf[ExtendedFairZ3Solver].setCurrentFunction(funDef)
+          }
+          s.assertCnstr(Not(ss_svc))
+
+          val satResult = s.check
+          val counterexample: Map[Identifier, Expr] = if (satResult == Some(true)) s.getModel else Map()
+          val solverResult = satResult.map(!_)
+
           val t2 = System.nanoTime
           val dt = ((t2 - t1) / 1000000) / 1000.0
-          reporter.info("==== VALID ====")
-          vcInfo.hasValue = true
-          vcInfo.value = Some(true)
-          vcInfo.solvedWith = None // For now, None mean simplier ;) 
-          vcInfo.time = Some(dt)
-          true
-        } else {
-        // try all solvers until one returns a meaningful answer
-        solvers.find(sf => {
-          val s = sf.getNewSolver
-          try {
-            reporter.debug("Trying with solver: " + s.name)
-            s.assertCnstr(Not(ss_svc))
 
-            val satResult = s.check
-            val counterexample: Map[Identifier, Expr] = if (satResult == Some(true)) s.getModel else Map()
-            val solverResult = satResult.map(!_)
+          solverResult match {
+            case _ if interruptManager.isInterrupted() =>
+              reporter.info("=== CANCELLED ===")
+              vcInfo.time = Some(dt)
+              vcInfo.goal = Some(ss_svc)
+              false
 
-            val t2 = System.nanoTime
-            val dt = ((t2 - t1) / 1000000) / 1000.0
+            case None =>
+              vcInfo.time = Some(dt)
+              vcInfo.goal = Some(ss_svc)
+              false
 
-            solverResult match {
-              case _ if interruptManager.isInterrupted() =>
-                reporter.info("=== CANCELLED ===")
-                vcInfo.time = Some(dt)
-                vcInfo.goal = Some(ss_svc)
-                false
+            case Some(true) =>
+              reporter.info("==== VALID ====")
 
-              case None =>
-                vcInfo.time = Some(dt)
-                vcInfo.goal = Some(ss_svc)
-                false
-
-              case Some(true) =>
-                reporter.info("==== VALID ====")
-
-                vcInfo.hasValue = true
-                vcInfo.value = Some(true)
-                vcInfo.solvedWith = Some(s)
-                vcInfo.time = Some(dt)
-                true
-
-              case Some(false) =>
-                reporter.error("Found counter-example : ")
-                reporter.error(counterexample.toSeq.sortBy(_._1.name).map(p => p._1 + " -> " + p._2).mkString("\n"))
-                reporter.error("==== INVALID ====")
-                vcInfo.hasValue = true
-                vcInfo.value = Some(false)
-                vcInfo.solvedWith = Some(s)
-                vcInfo.counterExample = Some(counterexample)
-                vcInfo.time = Some(dt)
-                true
-            }
-          } finally {
-            s.free()
-          }}) match {
-            case None => {
               vcInfo.hasValue = true
-              reporter.warning("==== UNKNOWN ====")
-            }
-            case _ =>
+              vcInfo.value = Some(true)
+              vcInfo.solvedWith = Some(s)
+              vcInfo.time = Some(dt)
+              true
+
+            case Some(false) =>
+              reporter.error("Found counter-example : ")
+              reporter.error(counterexample.toSeq.sortBy(_._1.name).map(p => p._1 + " -> " + p._2).mkString("\n"))
+              reporter.error("==== INVALID ====")
+              vcInfo.hasValue = true
+              vcInfo.value = Some(false)
+              vcInfo.solvedWith = Some(s)
+              vcInfo.counterExample = Some(counterexample)
+              vcInfo.time = Some(dt)
+              true
           }
+        } finally {
+          s.free()
+        }}) match {
+          case None => {
+            vcInfo.hasValue = true
+            reporter.warning("==== UNKNOWN ====")
+          }
+          case _ =>
         }
       }
-    }
+    })
 
     val report = new VerificationReport(vcs)
     report
@@ -296,20 +313,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
       false
     }
 
-    SimpleRewriter.clearRules
-    SimpleRewriter.setReporter(reporter)
     val isNotSimp = (isFlagTurnOn("codegen", ctx) || isFlagTurnOn("evalground", ctx))
-    if  (!isNotSimp) {
-
-      /*
-      for(funDef <- program.definedFunctions.toList.sortWith((fd1, fd2) => fd1 < fd2) if !funDef.hasPostcondition) {
-        // println(funDef)
-        val rus = Rules.createFunctionRewriteRules(funDef, program)
-        for (ru <- rus) SimpleRewriter.addRewriteRule(ru)
-      }
-      */
-      Rules.addDefaultRules(SimpleRewriter)
-    }
 
     if (doTraining) {
       reporter.info("Training MaSh Filter from user guide...")

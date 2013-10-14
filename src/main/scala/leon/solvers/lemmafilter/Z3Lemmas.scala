@@ -36,16 +36,18 @@ class ExtendedFairZ3Solver(context : LeonContext, program: Program) extends Fair
     addLemmaYet = true
   }
 
+  var curFun: Option[FunDef] = None
+  def setCurrentFunction(f: FunDef) = { curFun = Some(f) }
+
   def filter(expression: Expr) = {
     /* Only use filter in the first time of calling this function */
     if(lemmaFlag) {
       filterOption match {
         case "MaSh" =>
           val MaShfilter = new MaShFilter(context, program)
-          val curFun = program.definedFunctions.filter(f=>f.isReach).sortWith( (fd1,fd2) => fd1 < fd2 ).reverse.head
-          val funs = curFun +: program.definedFunctions.filter(f => f < curFun)
-          if (curFun.annotations.contains("depend")) {
-            curFun.dependencies match { case Some(deps) => prepareLemmas(funs.filter(f => deps.contains(f.id.name.toString))); case _ => }
+          val funs = curFun.get +: program.definedFunctions.filter(f => f < curFun.get)
+          if (curFun.get.annotations.contains("depend")) {
+            curFun.get.dependencies match { case Some(deps) => prepareLemmas(funs.filter(f => deps.contains(f.id.name.toString))); case _ => }
           } else {
             val m = funs.tail.filter(f => LemmaTools.isTrueLemma(f) && f.annotations.contains("lemma")).map( f => (f, Error(":-)"))).toMap
             if (m.size > 0)
@@ -55,11 +57,10 @@ class ExtendedFairZ3Solver(context : LeonContext, program: Program) extends Fair
 
         case "MePo" =>
           val MePofilter = new MePoFilter(context, program)
-          val curFun = program.definedFunctions.filter(f=>f.isReach).sortWith( (fd1,fd2) => fd1 < fd2 ).reverse.head
-          val funs = curFun +: program.definedFunctions.filter(f => f < curFun)
-          if (curFun.annotations.contains("depend")) {
+          val funs = curFun.get +: program.definedFunctions.filter(f => f < curFun.get)
+          if (curFun.get.annotations.contains("depend")) {
             // println("Hello depend")
-            curFun.dependencies match { case Some(deps) => prepareLemmas(funs.filter(f => deps.contains(f.id.name.toString))); case _ => }
+            curFun.get.dependencies match { case Some(deps) => prepareLemmas(funs.filter(f => deps.contains(f.id.name.toString))); case _ => }
           } else {
             val m = funs.tail.filter(f => LemmaTools.isTrueLemma(f) && f.annotations.contains("lemma")).map( f => (f, MePofilter.genVC(f))).toMap
             if (m.size > 0) {

@@ -11,7 +11,7 @@ import leon.purescala.Common._
 import leon.purescala.Definitions._
 import leon.solvers.lemmafilter.mash._
 
-class MaShFilter (context : LeonContext, prog: Program) extends Filter {
+@volatile class MaShFilter (context : LeonContext, prog: Program) extends Filter {
   val name = "MaSh Filter"
   val description = "This filter gets suggestions from MaSh tool for filtering"
 

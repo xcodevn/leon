@@ -85,34 +85,36 @@ abstract class Rewriter {
   }
 
   def clearRules = rules.clear
-  def instantiate(expr: Expr, m: MutableMap[Identifier, Expr]): Expr = expr match {
-    case FunctionInvocation(fd, args) => {
-      FunctionInvocation(fd, args.map(ag => instantiate(ag, m)), false)
+  def instantiate(expr: Expr, m: MutableMap[Identifier, Expr]): Expr = {
+    // println("ins " + expr + "  use  " + m)
+    expr match {
+      case FunctionInvocation(fd, args) => {
+        FunctionInvocation(fd, args.map(ag => instantiate(ag, m)), false)
+      }
+      case RewriteVariable(id) if m.contains(id) => {
+        // println("Our map " + m + " map for id: "  + id + " to " + m(id))
+        m(id)
+      }
+
+      case UnaryOperator(t, recons) => {
+        recons(instantiate(t, m)).setType(expr.getType)
+
+      }
+
+      case BinaryOperator(t, y, recons) => {
+        val i1 = instantiate(t, m)
+        val i2 = instantiate(y, m)
+
+        // println(" i1 i2 " + i1 + " : " + i2)
+        recons(i1, i2).setType(expr.getType)
+      }
+
+      case n @ NAryOperator(args, recons) => {
+        recons(args.map(ag => instantiate(ag, m))).setType(expr.getType)
+      }
+
+      case t @ _ => t
     }
-    case RewriteVariable(id) if m.contains(id) => {
-      // println("Our map " + m + " map for id: "  + id + " to " + m(id))
-      m(id)
-    }
-
-    case UnaryOperator(t, recons) => {
-      recons(instantiate(t, m)).setType(expr.getType)
-
-    }
-
-    case BinaryOperator(t, y, recons) => {
-      val i1 = instantiate(t, m)
-      val i2 = instantiate(y, m)
-
-      // println(" i1 i2 " + i1 + " : " + i2)
-      recons(i1, i2).setType(expr.getType)
-    }
-
-    case n @ NAryOperator(args, recons) => {
-      recons(args.map(ag => instantiate(ag, m))).setType(expr.getType)
-    }
-
-    case t @ _ => t
-
   }
   def exprHash(e: Expr): String = {
     e match {
@@ -153,7 +155,8 @@ object TrivialRewriter2 extends Rewriter {
     (expr, SIMP_SUCCESS())
   }
 }
-object SimpleRewriter extends Rewriter {
+
+class SimpleRewriter extends Rewriter {
 
   def isPermutationRule(r: RewriteRule): Boolean = {
     val m: MutableMap[Identifier, Expr] = MutableMap.empty
@@ -383,10 +386,10 @@ object SimpleRewriter extends Rewriter {
         // println ("real conds " + realConds)
         val simplified_realConds = realConds.map(x => {
           // println("Begin s " + x)
-          SimpleRewriter.push()
+          push()
           // SimpleRewriter.clearRules  // why we have to clear ?
           val (eee, rll) = simplifyWithSolver(sf)(x, Seq())
-          SimpleRewriter.pop()
+          pop()
           // println("End s " + eee)
           eee
 
@@ -435,8 +438,8 @@ object SimpleRewriter extends Rewriter {
                   }
 
                   reporter.debug("Cond " + new_conds1)
-                  SimpleRewriter.push()
-                  SimpleRewriter.clearRules /* We only use translation rules */
+                  push()
+                  clearRules /* We only use translation rules */
 
                   var extraConds = Seq[Expr]()
                   var invExtraConds = Seq[Expr]()
@@ -458,32 +461,32 @@ object SimpleRewriter extends Rewriter {
                     invExtraConds = invExtraConds ++ Seq(invma) ++ invse1
                   }
 
-                  for (r <- findingRule(And(extraConds))) SimpleRewriter.addRewriteRule(r)
+                  for (r <- findingRule(And(extraConds))) addRewriteRule(r)
                   /* Convert into new form */
                   disableTimeout()
                   val (s_lhs111, rl11) = simplifyWithSolver(sf)(new_lhs1, Seq())
                   enableTimeout()
-                  SimpleRewriter.pop()
+                  pop()
 
                   /* Real simplify */
-                  SimpleRewriter.push()
-                  for (r <- findingRule(new_conds1)) SimpleRewriter.addRewriteRule(r)
+                  push()
+                  for (r <- findingRule(new_conds1)) addRewriteRule(r)
                   val (s_lhs11, rl1) = simplifyWithSolver(sf)(s_lhs111, extraConds ++ Seq(new_conds1) ++ proofContext)
-                  SimpleRewriter.pop()
+                  pop()
 
                   /* Convert into original form */
-                  SimpleRewriter.push()
-                  SimpleRewriter.clearRules             /* We don't want any other rules effect this process */
+                  push()
+                  clearRules             /* We don't want any other rules effect this process */
                   disableTimeout()
-                  for (r <- findingRule(And(invExtraConds))) SimpleRewriter.addRewriteRule(r)
+                  for (r <- findingRule(And(invExtraConds))) addRewriteRule(r)
                   val (s_lhs12, rl2) = simplifyWithSolver(sf)(s_lhs11, Seq())
                   enableTimeout()
-                  SimpleRewriter.pop()
+                  pop()
                   // println("Add new elem: "+ (id, s_lhs1))
                   curVal + (id -> s_lhs12)
               }
             })
-            // println("New Map : " + newM+ " used for RHS : " + rhs)
+            // reporter.debug("New Map : " + newM+ " used for RHS : " + rhs)
             val new_rhs = instantiate(rhs, newM)
             // println("after instantiate " + rhs + " became " + new_rhs)
             if (!rule.isPermutation) {

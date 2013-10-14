@@ -12,6 +12,7 @@ import purescala.Trees._
 import purescala.Extractors._
 import collection.mutable.MutableList
 import collection.mutable.{Map => MutableMap, HashMap}
+import scala.collection.concurrent.TrieMap
 
 object Rules {
   def addDefaultRules(rewriter: Rewriter) {
@@ -50,7 +51,6 @@ object Rules {
     */
   }
 
-  val m: MutableMap[Identifier, RewriteVariable] = MutableMap.empty
 
   def containsChooseExpr(expr: Expr): Boolean = {
     def convert(t : Expr) : Boolean = t match {
@@ -66,7 +66,7 @@ object Rules {
   }
 
 
-  def convert2Pattern(e: Expr, s: Set[Variable] = Set(), createNewVar: Boolean = true): Expr = {
+  def convert2Pattern(e: Expr, m: MutableMap[Identifier, RewriteVariable], s: Set[Variable] = Set(), createNewVar: Boolean = true): Expr = {
 
     def toRewriteVariable(x: Variable): RewriteVariable = {
       val Variable(id) = x
@@ -112,10 +112,10 @@ object Rules {
   }
 
   def createRuleWithDisableVars(e1: Expr, e2: Expr, s: Set[Variable], w: Int) = {
-    m.clear()
+    val m: MutableMap[Identifier, RewriteVariable] = MutableMap.empty
     try {
-      val ex1 = convert2Pattern(e1, s)
-      val ex2 = convert2Pattern(e2, s, false)
+      val ex1 = convert2Pattern(e1, m, s)
+      val ex2 = convert2Pattern(e2, m, s, false)
       RewriteRule("Inductive_Hypothesis", Seq(), ex1, ex2, w)
     } catch {
       case _ : Throwable => RewriteRule("Error variable in RHS not in LHS", Seq(), Error("LHS"), Error("RHS"), w)
@@ -123,11 +123,15 @@ object Rules {
   }
 
 
-  val cacheRules = new HashMap[ (FunDef, Program) , Seq[RewriteRule] ] ()
+  val cacheRules = new TrieMap[ (FunDef, Program) , Seq[RewriteRule] ] ()
 
   def clearCache() = cacheRules.clear
 
   def createFunctionRewriteRules(fd: FunDef, prog: Program): Seq[RewriteRule] = {
+    val m: MutableMap[Identifier, RewriteVariable] = MutableMap.empty
+    m.clear()
+    //if (cacheRules contains  (fd, prog) )
+    //  println("Cache hited")
     cacheRules.getOrElse( (fd, prog), {
       val rl = {
         // Reset our map
@@ -139,7 +143,7 @@ object Rules {
             // println(imp)
             // println(funDef.args)
             val fn = fd.id.toString     // function name
-            val lstArgs = fd.args.map(arg => { val VarDecl(v, ty) = arg; convert2Pattern(Variable(v).setType(ty)) }).toSeq
+            val lstArgs = fd.args.map(arg => { val VarDecl(v, ty) = arg; convert2Pattern(Variable(v).setType(ty), m) }).toSeq
             val fi = FunctionInvocation(fd, lstArgs)
             val s0 = imp match { 
               case MatchExpr(_, _) => {
@@ -147,19 +151,19 @@ object Rules {
                   ex match {
                     case IfExpr(con, ex1, ex2) => {
                       val rn = fn + "_simp" + c.toString
-                      val conn  = convert2Pattern(con)
+                      val conn  = convert2Pattern(con, m)
                       RewriteRule(rn, conn +: conds, fi, ex1, 5) +: travelMatch(ex2, c+1, Not(conn) +: conds)
                     }
                     case _ => Seq( RewriteRule(fn + "_simp" + c.toString, conds, fi, ex, 5) )
                   } 
                 }
-                val ex = convert2Pattern(matchToIfThenElse(imp))
+                val ex = convert2Pattern(matchToIfThenElse(imp), m)
                 travelMatch(ex, 1, Seq())
               }
 
               case _ =>
                 if (!prog.isRecursive(fd)) {
-                  Seq(RewriteRule(fd.id.toString + "_simp",Seq(), fi, convert2Pattern(matchToIfThenElse(imp)),15))
+                  Seq(RewriteRule(fd.id.toString + "_simp",Seq(), fi, convert2Pattern(matchToIfThenElse(imp), m),15))
                 } else Seq()
             }
 
@@ -169,11 +173,11 @@ object Rules {
             val s1 = if(fd.annotations.contains("simp")) {
               // println(fd)
               val precond = fd.precondition match {
-                case Some(pre) => Seq(convert2Pattern(pre))
+                case Some(pre) => Seq(convert2Pattern(pre, m))
                 case _         => Seq()
               }
 
-              convert2Pattern(imp) match {
+              convert2Pattern(imp, m) match {
                 case Equals(e1, e2) => Seq( RewriteRule(fn + "_simp_lemma", precond, e1, e2, 20) )
                 case Iff(e1, e2) => Seq( RewriteRule(fn + "_simp_lemma", precond, e1, e2, 20) )
                 case _ => Seq()
@@ -185,7 +189,7 @@ object Rules {
           } else Seq()
         } else Seq()
       }
-      cacheRules( (fd, prog) ) = rl
+      cacheRules.update( (fd, prog), rl )
       rl
     })
   }
