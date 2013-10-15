@@ -1,0 +1,1517 @@
+Test size 0
+==== A - 0 ====
+Size: 0
+Time: 10.65248
+Test size 0
+==== A - 0 ====
+Size: 0
+Time: 10.43956
+==== A - 0 ====
+Size: 0
+Time: 11.26985
+Test size 1
+==== A - 1 ====
+Size: 1
+Time: 10.65166
+==== A - 1 ====
+Size: 1
+Time: 10.38574
+Test size 2
+==== A - 2 ====
+Size: 2
+Time: 11.09791
+==== A - 2 ====
+Size: 2
+Time: 11.34472
+Test size 3
+==== A - 3 ====
+Size: 3
+Time: 11.28965
+==== A - 3 ====
+Size: 3
+Time: 11.15845
+Test size 4
+==== A - 4 ====
+Size: 4
+Time: 13.62029
+==== A - 4 ====
+Size: 4
+Time: 10.62042
+Test size 5
+==== A - 5 ====
+Size: 5
+Time: 14.03050
+==== A - 5 ====
+Size: 5
+Time: 11.10347
+Test size 6
+==== A - 6 ====
+Size: 6
+Time: 15.13619
+==== A - 6 ====
+Size: 6
+Time: 11.45697
+Test size 7
+==== A - 7 ====
+Size: 7
+Time: 14.66311
+==== A - 7 ====
+Size: 7
+Time: 11.39459
+Test size 8
+==== A - 8 ====
+Size: 8
+Time: 15.01633
+==== A - 8 ====
+Size: 8
+Time: 11.55849
+Test size 9
+==== A - 9 ====
+Size: 9
+Time: 14.93840
+==== A - 9 ====
+Size: 9
+Time: 11.50722
+Test size 10
+==== A - 10 ====
+Size: 10
+Time: 15.37441
+==== A - 10 ====
+Size: 10
+Time: 11.02828
+Test size 11
+==== A - 11 ====
+Size: 11
+Time: 16.50178
+==== A - 11 ====
+Size: 11
+Time: 11.24743
+Test size 12
+==== A - 12 ====
+Size: 12
+Time: 16.10806
+==== A - 12 ====
+Size: 12
+Time: 11.56116
+Test size 13
+==== A - 13 ====
+Size: 13
+Time: 16.95456
+==== A - 13 ====
+Size: 13
+Time: 11.43743
+Test size 14
+==== A - 14 ====
+Size: 14
+Time: 17.20689
+==== A - 14 ====
+Size: 14
+Time: 11.56928
+Test size 15
+==== A - 15 ====
+Size: 15
+Time: 16.98924
+==== A - 15 ====
+Size: 15
+Time: 11.56070
+Test size 16
+==== A - 16 ====
+Size: 16
+Time: 17.17343
+==== A - 16 ====
+Size: 16
+Time: 11.07696
+Test size 17
+==== A - 17 ====
+Size: 17
+Time: 17.18549
+==== A - 17 ====
+Size: 17
+Time: 12.16401
+Test size 18
+==== A - 18 ====
+Size: 18
+Time: 17.40242
+==== A - 18 ====
+Size: 18
+Time: 12.04229
+Test size 19
+==== A - 19 ====
+Size: 19
+Time: 17.89359
+==== A - 19 ====
+Size: 19
+Time: 12.18081
+Test size 20
+==== A - 20 ====
+Size: 20
+Time: 17.81657
+==== A - 20 ====
+Size: 20
+Time: 11.06911
+Test size 21
+==== A - 21 ====
+Size: 21
+Time: 18.31692
+==== A - 21 ====
+Size: 21
+Time: 11.24665
+Test size 22
+==== A - 22 ====
+Size: 22
+Time: 18.43381
+==== A - 22 ====
+Size: 22
+Time: 11.98171
+Test size 23
+==== A - 23 ====
+Size: 23
+Time: 19.22349
+==== A - 23 ====
+Size: 23
+Time: 11.02539
+Test size 24
+==== A - 24 ====
+Size: 24
+Time: 18.33885
+==== A - 24 ====
+Size: 24
+Time: 11.42722
+Test size 25
+==== A - 25 ====
+Size: 25
+Time: 19.51584
+==== A - 25 ====
+Size: 25
+Time: 11.72770
+Test size 26
+==== A - 26 ====
+Size: 26
+Time: 19.02511
+==== A - 26 ====
+Size: 26
+Time: 11.92058
+Test size 27
+==== A - 27 ====
+Size: 27
+Time: 19.42197
+==== A - 27 ====
+Size: 27
+Time: 11.84508
+Test size 28
+==== A - 28 ====
+Size: 28
+Time: 19.58073
+==== A - 28 ====
+Size: 28
+Time: 11.62400
+Test size 29
+==== A - 29 ====
+Size: 29
+Time: 19.76595
+==== A - 29 ====
+Size: 29
+Time: 11.32427
+Test size 30
+==== A - 30 ====
+Size: 30
+Time: 20.55795
+==== A - 30 ====
+Size: 30
+Time: 12.28550
+Test size 31
+==== A - 31 ====
+Size: 31
+Time: 20.00780
+==== A - 31 ====
+Size: 31
+Time: 11.40974
+Test size 32
+==== A - 32 ====
+Size: 32
+Time: 21.10718
+==== A - 32 ====
+Size: 32
+Time: 12.36228
+Test size 33
+==== A - 33 ====
+Size: 33
+Time: 20.52289
+g==== A - 33 ====
+Size: 33
+Time: 11.44632
+Test size 34
+==== A - 34 ====
+Size: 34
+Time: 21.01859
+==== A - 34 ====
+Size: 34
+Time: 12.01912
+Test size 35
+==== A - 35 ====
+Size: 35
+Time: 20.88648
+==== A - 35 ====
+Size: 35
+Time: 12.10356
+Test size 36
+==== A - 36 ====
+Size: 36
+Time: 21.31630
+==== A - 36 ====
+Size: 36
+Time: 11.70003
+Test size 37
+==== A - 37 ====
+Size: 37
+Time: 22.00866
+==== A - 37 ====
+Size: 37
+Time: 12.40266
+Test size 38
+==== A - 38 ====
+Size: 38
+Time: 21.79606
+==== A - 38 ====
+Size: 38
+Time: 12.17241
+Test size 39
+==== A - 39 ====
+Size: 39
+Time: 23.15345
+==== A - 39 ====
+Size: 39
+Time: 11.79341
+Test size 40
+==== A - 40 ====
+Size: 40
+Time: 22.58033
+==== A - 40 ====
+Size: 40
+Time: 13.46697
+Test size 41
+==== A - 41 ====
+Size: 41
+Time: 22.86293
+==== A - 41 ====
+Size: 41
+Time: 12.78119
+Test size 42
+==== A - 42 ====
+Size: 42
+Time: 23.53939
+==== A - 42 ====
+Size: 42
+Time: 13.74434
+Test size 43
+==== A - 43 ====
+Size: 43
+Time: 23.41903
+==== A - 43 ====
+Size: 43
+Time: 12.16365
+Test size 44
+==== A - 44 ====
+Size: 44
+Time: 23.72303
+==== A - 44 ====
+Size: 44
+Time: 12.30040
+Test size 45
+==== A - 45 ====
+Size: 45
+Time: 25.20660
+==== A - 45 ====
+Size: 45
+Time: 12.61658
+Test size 46
+==== A - 46 ====
+Size: 46
+Time: 23.89466
+==== A - 46 ====
+Size: 46
+Time: 12.87315
+Test size 47
+==== A - 47 ====
+Size: 47
+Time: 24.78367
+==== A - 47 ====
+Size: 47
+Time: 12.22285
+Test size 48
+==== A - 48 ====
+Size: 48
+Time: 25.01097
+==== A - 48 ====
+Size: 48
+Time: 13.19239
+Test size 49
+==== A - 49 ====
+Size: 49
+Time: 26.26213
+==== A - 49 ====
+Size: 49
+Time: 12.55912
+Test size 50
+==== A - 50 ====
+Size: 50
+Time: 26.02239
+==== A - 50 ====
+Size: 50
+Time: 13.43060
+Test size 51
+==== A - 51 ====
+Size: 51
+Time: 26.36127
+==== A - 51 ====
+Size: 51
+Time: 12.79514
+Test size 52
+==== A - 52 ====
+Size: 52
+Time: 27.07673
+==== A - 52 ====
+Size: 52
+Time: 13.04608
+Test size 53
+==== A - 53 ====
+Size: 53
+Time: 27.64898
+==== A - 53 ====
+Size: 53
+Time: 13.57109
+Test size 54
+==== A - 54 ====
+Size: 54
+Time: 28.77880
+==== A - 54 ====
+Size: 54
+Time: 14.82256
+Test size 55
+==== A - 55 ====
+Size: 55
+Time: 28.50644
+==== A - 55 ====
+Size: 55
+Time: 13.62610
+Test size 56
+==== A - 56 ====
+Size: 56
+Time: 29.32492
+==== A - 56 ====
+Size: 56
+Time: 13.39660
+Test size 57
+==== A - 57 ====
+Size: 57
+Time: 30.84214
+==== A - 57 ====
+Size: 57
+Time: 15.17086
+Test size 58
+==== A - 58 ====
+Size: 58
+Time: 31.86115
+==== A - 58 ====
+Size: 58
+Time: 13.62974
+Test size 59
+==== A - 59 ====
+Size: 59
+Time: 31.14576
+==== A - 59 ====
+Size: 59
+Time: 14.31459
+Test size 60
+==== A - 60 ====
+Size: 60
+Time: 31.82148
+==== A - 60 ====
+Size: 60
+Time: 14.88548
+Test size 61
+==== A - 61 ====
+Size: 61
+Time: 31.71953
+==== A - 61 ====
+Size: 61
+Time: 14.56975
+Test size 62
+==== A - 62 ====
+Size: 62
+Time: 32.70919
+==== A - 62 ====
+Size: 62
+Time: 15.58319
+Test size 63
+==== A - 63 ====
+Size: 63
+Time: 33.80349
+==== A - 63 ====
+Size: 63
+Time: 14.56283
+Test size 64
+==== A - 64 ====
+Size: 64
+Time: 34.23532
+==== A - 64 ====
+Size: 64
+Time: 15.74472
+Test size 65
+==== A - 65 ====
+Size: 65
+Time: 33.79527
+==== A - 65 ====
+Size: 65
+Time: 17.06661
+Test size 66
+==== A - 66 ====
+Size: 66
+Time: 35.08192
+==== A - 66 ====
+Size: 66
+Time: 15.49789
+Test size 67
+==== A - 67 ====
+Size: 67
+Time: 35.90385
+==== A - 67 ====
+Size: 67
+Time: 16.52756
+Test size 68
+==== A - 68 ====
+Size: 68
+Time: 37.02471
+==== A - 68 ====
+Size: 68
+Time: 17.26329
+Test size 69
+==== A - 69 ====
+Size: 69
+Time: 36.14778
+==== A - 69 ====
+Size: 69
+Time: 16.21597
+Test size 70
+==== A - 70 ====
+Size: 70
+Time: 36.41389
+==== A - 70 ====
+Size: 70
+Time: 15.79951
+Test size 71
+==== A - 71 ====
+Size: 71
+Time: 36.32204
+==== A - 71 ====
+Size: 71
+Time: 16.86063
+Test size 72
+==== A - 72 ====
+Size: 72
+Time: 36.41690
+==== A - 72 ====
+Size: 72
+Time: 15.86068
+Test size 73
+==== A - 73 ====
+Size: 73
+Time: 37.78880
+==== A - 73 ====
+Size: 73
+Time: 16.61228
+Test size 74
+==== A - 74 ====
+Size: 74
+Time: 37.93846
+==== A - 74 ====
+Size: 74
+Time: 17.70898
+Test size 75
+==== A - 75 ====
+Size: 75
+Time: 37.59608
+==== A - 75 ====
+Size: 75
+Time: 16.49556
+Test size 76
+==== A - 76 ====
+Size: 76
+Time: 38.80700
+==== A - 76 ====
+Size: 76
+Time: 16.18009
+Test size 77
+==== A - 77 ====
+Size: 77
+Time: 38.36021
+==== A - 77 ====
+Size: 77
+Time: 17.93289
+Test size 78
+==== A - 78 ====
+Size: 78
+Time: 38.96506
+==== A - 78 ====
+Size: 78
+Time: 16.70947
+Test size 79
+==== A - 79 ====
+Size: 79
+Time: 38.28084
+==== A - 79 ====
+Size: 79
+Time: 16.77284
+Test size 80
+==== A - 80 ====
+Size: 80
+Time: 39.04157
+==== A - 80 ====
+Size: 80
+Time: 16.72387
+Test size 81
+==== A - 81 ====
+Size: 81
+Time: 39.62801
+==== A - 81 ====
+Size: 81
+Time: 17.17352
+Test size 82
+==== A - 82 ====
+Size: 82
+Time: 41.17526
+==== A - 82 ====
+Size: 82
+Time: 17.10613
+Test size 83
+==== A - 83 ====
+Size: 83
+Time: 45.14822
+==== A - 83 ====
+Size: 83
+Time: 17.72443
+Test size 84
+==== A - 84 ====
+Size: 84
+Time: 45.41338
+==== A - 84 ====
+Size: 84
+Time: 17.47614
+Test size 85
+==== A - 85 ====
+Size: 85
+Time: 45.02041
+==== A - 85 ====
+Size: 85
+Time: 18.11418
+Test size 86
+==== A - 86 ====
+Size: 86
+Time: 45.36954
+==== A - 86 ====
+Size: 86
+Time: 18.22820
+Test size 87
+==== A - 87 ====
+Size: 87
+Time: 45.49988
+==== A - 87 ====
+Size: 87
+Time: 18.27487
+Test size 88
+==== A - 88 ====
+Size: 88
+Time: 46.17961
+==== A - 88 ====
+Size: 88
+Time: 19.47626
+Test size 89
+==== A - 89 ====
+Size: 89
+Time: 45.95411
+==== A - 89 ====
+Size: 89
+Time: 19.80580
+Test size 90
+==== A - 90 ====
+Size: 90
+Time: 47.35569
+==== A - 90 ====
+Size: 90
+Time: 18.99129
+Test size 91
+==== A - 91 ====
+Size: 91
+Time: 48.15773
+==== A - 91 ====
+Size: 91
+Time: 19.50757
+Test size 92
+==== A - 92 ====
+Size: 92
+Time: 47.62869
+==== A - 92 ====
+Size: 92
+Time: 19.20224
+Test size 93
+==== A - 93 ====
+Size: 93
+Time: 47.56471
+==== A - 93 ====
+Size: 93
+Time: 19.34996
+Test size 94
+==== A - 94 ====
+Size: 94
+Time: 50.15777
+==== A - 94 ====
+Size: 94
+Time: 19.50592
+Test size 95
+==== A - 95 ====
+Size: 95
+Time: 50.38912
+==== A - 95 ====
+Size: 95
+Time: 19.34062
+Test size 96
+==== A - 96 ====
+Size: 96
+Time: 50.14760
+==== A - 96 ====
+Size: 96
+Time: 20.29296
+Test size 97
+==== A - 97 ====
+Size: 97
+Time: 50.13608
+==== A - 97 ====
+Size: 97
+Time: 19.64374
+Test size 98
+==== A - 98 ====
+Size: 98
+Time: 50.11329
+==== A - 98 ====
+Size: 98
+Time: 18.79200
+Test size 99
+==== A - 99 ====
+Size: 99
+Time: 51.61018
+==== A - 99 ====
+Size: 99
+Time: 19.54236
+Test size 100
+==== A - 100 ====
+Size: 100
+Time: 50.60349
+==== A - 100 ====
+Size: 100
+Time: 19.59406
+Test size 101
+==== A - 101 ====
+Size: 101
+Time: 51.41146
+==== A - 101 ====
+Size: 101
+Time: 19.09268
+Test size 102
+==== A - 102 ====
+Size: 102
+Time: 51.00921
+==== A - 102 ====
+Size: 102
+Time: 20.76059
+Test size 103
+==== A - 103 ====
+Size: 103
+Time: 51.89286
+==== A - 103 ====
+Size: 103
+Time: 19.21989
+Test size 104
+==== A - 104 ====
+Size: 104
+Time: 52.21481
+==== A - 104 ====
+Size: 104
+Time: 19.31468
+Test size 105
+==== A - 105 ====
+Size: 105
+Time: 51.91972
+==== A - 105 ====
+Size: 105
+Time: 20.78683
+Test size 106
+==== A - 106 ====
+Size: 106
+Time: 53.01378
+==== A - 106 ====
+Size: 106
+Time: 20.06561
+Test size 107
+==== A - 107 ====
+Size: 107
+Time: 52.26053
+==== A - 107 ====
+Size: 107
+Time: 20.55249
+Test size 108
+==== A - 108 ====
+Size: 108
+Time: 52.32423
+==== A - 108 ====
+Size: 108
+Time: 20.77746
+Test size 109
+==== A - 109 ====
+Size: 109
+Time: 52.53507
+==== A - 109 ====
+Size: 109
+Time: 19.54002
+Test size 110
+==== A - 110 ====
+Size: 110
+Time: 53.56385
+==== A - 110 ====
+Size: 110
+Time: 20.51897
+Test size 111
+==== A - 111 ====
+Size: 111
+Time: 55.32373
+==== A - 111 ====
+Size: 111
+Time: 23.29113
+Test size 112
+==== A - 112 ====
+Size: 112
+Time: 55.13096
+==== A - 112 ====
+Size: 112
+Time: 22.50460
+Test size 113
+==== A - 113 ====
+Size: 113
+Time: 55.62544
+==== A - 113 ====
+Size: 113
+Time: 22.11567
+Test size 114
+==== A - 114 ====
+Size: 114
+Time: 57.71370
+==== A - 114 ====
+Size: 114
+Time: 22.21060
+Test size 115
+==== A - 115 ====
+Size: 115
+Time: 57.80763
+==== A - 115 ====
+Size: 115
+Time: 21.96943
+Test size 116
+==== A - 116 ====
+Size: 116
+Time: 57.37907
+==== A - 116 ====
+Size: 116
+Time: 22.62668
+Test size 117
+==== A - 117 ====
+Size: 117
+Time: 58.35009
+==== A - 117 ====
+Size: 117
+Time: 23.33447
+Test size 118
+==== A - 118 ====
+Size: 118
+Time: 58.02745
+==== A - 118 ====
+Size: 118
+Time: 22.47919
+Test size 119
+==== A - 119 ====
+Size: 119
+Time: 57.97357
+==== A - 119 ====
+Size: 119
+Time: 23.95832
+Test size 120
+==== A - 120 ====
+Size: 120
+Time: 58.07400
+==== A - 120 ====
+Size: 120
+Time: 24.34588
+Test size 121
+==== A - 121 ====
+Size: 121
+Time: 57.95754
+==== A - 121 ====
+Size: 121
+Time: 23.65412
+Test size 122
+==== A - 122 ====
+Size: 122
+Time: 57.97299
+==== A - 122 ====
+Size: 122
+Time: 22.79719
+Test size 123
+==== A - 123 ====
+Size: 123
+Time: 59.37320
+==== A - 123 ====
+Size: 123
+Time: 23.14082
+Test size 124
+==== A - 124 ====
+Size: 124
+Time: 60.51602
+==== A - 124 ====
+Size: 124
+Time: 23.57639
+Test size 125
+==== A - 125 ====
+Size: 125
+Time: 58.76318
+==== A - 125 ====
+Size: 125
+Time: 23.23289
+Test size 126
+==== A - 126 ====
+Size: 126
+Time: 60.30055
+==== A - 126 ====
+Size: 126
+Time: 23.05506
+Test size 127
+==== A - 127 ====
+Size: 127
+Time: 60.27796
+==== A - 127 ====
+Size: 127
+Time: 23.99740
+Test size 128
+==== A - 128 ====
+Size: 128
+Time: 60.04064
+==== A - 128 ====
+Size: 128
+Time: 22.55685
+Test size 129
+==== A - 129 ====
+Size: 129
+Time: 60.33659
+==== A - 129 ====
+Size: 129
+Time: 22.82321
+Test size 130
+==== A - 130 ====
+Size: 130
+Time: 61.29985
+==== A - 130 ====
+Size: 130
+Time: 22.86286
+Test size 131
+==== A - 131 ====
+Size: 131
+Time: 61.71727
+==== A - 131 ====
+Size: 131
+Time: 23.73284
+Test size 132
+==== A - 132 ====
+Size: 132
+Time: 60.44176
+==== A - 132 ====
+Size: 132
+Time: 23.97089
+Test size 133
+==== A - 133 ====
+Size: 133
+Time: 60.56421
+==== A - 133 ====
+Size: 133
+Time: 24.47423
+Test size 134
+==== A - 134 ====
+Size: 134
+Time: 61.83435
+==== A - 134 ====
+Size: 134
+Time: 24.54657
+Test size 135
+==== A - 135 ====
+Size: 135
+Time: 61.97617
+==== A - 135 ====
+Size: 135
+Time: 22.64694
+Test size 136
+==== A - 136 ====
+Size: 136
+Time: 62.15147
+==== A - 136 ====
+Size: 136
+Time: 23.24601
+Test size 137
+==== A - 137 ====
+Size: 137
+Time: 60.70168
+==== A - 137 ====
+Size: 137
+Time: 24.19510
+Test size 138
+==== A - 138 ====
+Size: 138
+Time: 61.84416
+==== A - 138 ====
+Size: 138
+Time: 23.88047
+Test size 139
+==== A - 139 ====
+Size: 139
+Time: 62.03916
+==== A - 139 ====
+Size: 139
+Time: 23.99538
+Test size 140
+==== A - 140 ====
+Size: 140
+Time: 63.45203
+==== A - 140 ====
+Size: 140
+Time: 23.17046
+Test size 141
+==== A - 141 ====
+Size: 141
+Time: 63.33052
+==== A - 141 ====
+Size: 141
+Time: 23.57990
+Test size 142
+==== A - 142 ====
+Size: 142
+Time: 64.67975
+==== A - 142 ====
+Size: 142
+Time: 23.95437
+Test size 143
+==== A - 143 ====
+Size: 143
+Time: 65.49734
+==== A - 143 ====
+Size: 143
+Time: 23.85626
+Test size 144
+==== A - 144 ====
+Size: 144
+Time: 64.68166
+==== A - 144 ====
+Size: 144
+Time: 23.49173
+Test size 145
+==== A - 145 ====
+Size: 145
+Time: 65.36168
+==== A - 145 ====
+Size: 145
+Time: 24.95441
+Test size 146
+==== A - 146 ====
+Size: 146
+Time: 65.16785
+==== A - 146 ====
+Size: 146
+Time: 24.93542
+Test size 147
+==== A - 147 ====
+Size: 147
+Time: 66.44909
+==== A - 147 ====
+Size: 147
+Time: 25.96031
+Test size 148
+==== A - 148 ====
+Size: 148
+Time: 66.58075
+==== A - 148 ====
+Size: 148
+Time: 22.52811
+Test size 149
+==== A - 149 ====
+Size: 149
+Time: 66.48579
+==== A - 149 ====
+Size: 149
+Time: 23.25927
+Test size 150
+==== A - 150 ====
+Size: 150
+Time: 69.62780
+==== A - 150 ====
+Size: 150
+Time: 23.60342
+Test size 151
+==== A - 151 ====
+Size: 151
+Time: 69.59893
+==== A - 151 ====
+Size: 151
+Time: 23.09480
+Test size 152
+==== A - 152 ====
+Size: 152
+Time: 69.72300
+==== A - 152 ====
+Size: 152
+Time: 23.95598
+Test size 153
+==== A - 153 ====
+Size: 153
+Time: 69.67845
+==== A - 153 ====
+Size: 153
+Time: 23.46208
+Test size 154
+==== A - 154 ====
+Size: 154
+Time: 69.88441
+==== A - 154 ====
+Size: 154
+Time: 23.51215
+Test size 155
+==== A - 155 ====
+Size: 155
+Time: 69.96419
+==== A - 155 ====
+Size: 155
+Time: 24.07533
+Test size 156
+==== A - 156 ====
+Size: 156
+Time: 69.37278
+==== A - 156 ====
+Size: 156
+Time: 24.60601
+Test size 157
+==== A - 157 ====
+Size: 157
+Time: 71.21638
+==== A - 157 ====
+Size: 157
+Time: 24.16102
+Test size 158
+==== A - 158 ====
+Size: 158
+Time: 69.80707
+==== A - 158 ====
+Size: 158
+Time: 25.12356
+Test size 159
+==== A - 159 ====
+Size: 159
+Time: 70.89135
+==== A - 159 ====
+Size: 159
+Time: 25.12973
+Test size 160
+==== A - 160 ====
+Size: 160
+Time: 71.40346
+==== A - 160 ====
+Size: 160
+Time: 24.38704
+Test size 161
+==== A - 161 ====
+Size: 161
+Time: 72.11735
+==== A - 161 ====
+Size: 161
+Time: 24.89343
+Test size 162
+==== A - 162 ====
+Size: 162
+Time: 71.75336
+==== A - 162 ====
+Size: 162
+Time: 26.96103
+Test size 163
+==== A - 163 ====
+Size: 163
+Time: 72.41910
+==== A - 163 ====
+Size: 163
+Time: 24.74183
+Test size 164
+==== A - 164 ====
+Size: 164
+Time: 71.28759
+==== A - 164 ====
+Size: 164
+Time: 24.53096
+Test size 165
+==== A - 165 ====
+Size: 165
+Time: 71.64876
+==== A - 165 ====
+Size: 165
+Time: 24.79255
+Test size 166
+==== A - 166 ====
+Size: 166
+Time: 71.83801
+==== A - 166 ====
+Size: 166
+Time: 26.46100
+Test size 167
+==== A - 167 ====
+Size: 167
+Time: 73.42668
+==== A - 167 ====
+Size: 167
+Time: 26.34144
+Test size 168
+==== A - 168 ====
+Size: 168
+Time: 73.25928
+==== A - 168 ====
+Size: 168
+Time: 25.18061
+Test size 169
+==== A - 169 ====
+Size: 169
+Time: 72.34516
+==== A - 169 ====
+Size: 169
+Time: 25.67269
+Test size 170
+==== A - 170 ====
+Size: 170
+Time: 72.93724
+==== A - 170 ====
+Size: 170
+Time: 25.69212
+Test size 171
+==== A - 171 ====
+Size: 171
+Time: 72.67952
+==== A - 171 ====
+Size: 171
+Time: 25.43587
+Test size 172
+==== A - 172 ====
+Size: 172
+Time: 73.42860
+==== A - 172 ====
+Size: 172
+Time: 25.05568
+Test size 173
+==== A - 173 ====
+Size: 173
+Time: 73.95546
+==== A - 173 ====
+Size: 173
+Time: 26.79552
+Test size 174
+==== A - 174 ====
+Size: 174
+Time: 73.86661
+==== A - 174 ====
+Size: 174
+Time: 25.83609
+Test size 175
+==== A - 175 ====
+Size: 175
+Time: 73.39058
+==== A - 175 ====
+Size: 175
+Time: 26.33686
+Test size 176
+==== A - 176 ====
+Size: 176
+Time: 75.88643
+==== A - 176 ====
+Size: 176
+Time: 25.03784
+Test size 177
+==== A - 177 ====
+Size: 177
+Time: 74.04223
+==== A - 177 ====
+Size: 177
+Time: 26.72558
+Test size 178
+==== A - 178 ====
+Size: 178
+Time: 73.72698
+==== A - 178 ====
+Size: 178
+Time: 25.31704
+Test size 179
+==== A - 179 ====
+Size: 179
+Time: 74.75517
+==== A - 179 ====
+Size: 179
+Time: 25.83520
+Test size 180
+==== A - 180 ====
+Size: 180
+Time: 74.68304
+==== A - 180 ====
+Size: 180
+Time: 25.78423
+Test size 181
+==== A - 181 ====
+Size: 181
+Time: 74.56769
+==== A - 181 ====
+Size: 181
+Time: 26.87484
+Test size 182
+==== A - 182 ====
+Size: 182
+Time: 76.88527
+==== A - 182 ====
+Size: 182
+Time: 26.29697
+Test size 183
+==== A - 183 ====
+Size: 183
+Time: 77.38978
+==== A - 183 ====
+Size: 183
+Time: 26.71170
+Test size 184
+==== A - 184 ====
+Size: 184
+Time: 78.16999
+==== A - 184 ====
+Size: 184
+Time: 25.91050
+Test size 185
+==== A - 185 ====
+Size: 185
+Time: 77.15607
+==== A - 185 ====
+Size: 185
+Time: 26.48955
+Test size 186
+==== A - 186 ====
+Size: 186
+Time: 76.17323
+==== A - 186 ====
+Size: 186
+Time: 25.34023
+Test size 187
+==== A - 187 ====
+Size: 187
+Time: 77.72416
+==== A - 187 ====
+Size: 187
+Time: 27.01262
+Test size 188
+==== A - 188 ====
+Size: 188
+Time: 77.44922
+==== A - 188 ====
+Size: 188
+Time: 26.77363
+Test size 189
+==== A - 189 ====
+Size: 189
+Time: 78.89108
+==== A - 189 ====
+Size: 189
+Time: 27.41255
+Test size 190
+==== A - 190 ====
+Size: 190
+Time: 78.65677
+==== A - 190 ====
+Size: 190
+Time: 26.62019
+Test size 191
+==== A - 191 ====
+Size: 191
+Time: 78.16853
+==== A - 191 ====
+Size: 191
+Time: 26.69053
+Test size 192
+==== A - 192 ====
+Size: 192
+Time: 78.68233
+==== A - 192 ====
+Size: 192
+Time: 26.54765
+Test size 193
+==== A - 193 ====
+Size: 193
+Time: 79.99033
+==== A - 193 ====
+Size: 193
+Time: 26.63619
+Test size 194
+==== A - 194 ====
+Size: 194
+Time: 79.35684
+==== A - 194 ====
+Size: 194
+Time: 27.39072
+Test size 195
+==== A - 195 ====
+Size: 195
+Time: 82.77631
+==== A - 195 ====
+Size: 195
+Time: 29.70664
+Test size 196
+==== A - 196 ====
+Size: 196
+Time: 83.22869
+==== A - 196 ====
+Size: 196
+Time: 28.54415
+Test size 197
+==== A - 197 ====
+Size: 197
+Time: 83.17536
+==== A - 197 ====
+Size: 197
+Time: 29.68633
+Test size 198
+==== A - 198 ====
+Size: 198
+Time: 82.93751
+==== A - 198 ====
+Size: 198
+Time: 28.83188
+Test size 199
+==== A - 199 ====
+Size: 199
+Time: 83.36794
+==== A - 199 ====
+Size: 199
+Time: 28.40563
+Test size 200
+==== A - 200 ====
+Size: 200
+Time: 84.34014
+==== A - 200 ====
+Size: 200
+Time: 28.56221
+Test size 201
+==== A - 201 ====
+Size: 201
+Time: 83.75868
+==== A - 201 ====
+Size: 201
+Time: 29.44961
+Test size 202
+==== A - 202 ====
+Size: 202
+Time: 84.28409
+==== A - 202 ====
+Size: 202
+Time: 29.72798
+Test size 203
+==== A - 203 ====
+Size: 203
+Time: 84.71771
+==== A - 203 ====
+Size: 203
+Time: 29.86920
+Test size 204
+==== A - 204 ====
+Size: 204
+Time: 86.98015
+==== A - 204 ====
+Size: 204
+Time: 29.10074
+Test size 205
+==== A - 205 ====
+Size: 205
+Time: 84.43820
+==== A - 205 ====
+Size: 205
+Time: 29.49963
+Test size 206
+==== A - 206 ====
+Size: 206
+Time: 86.38265
+==== A - 206 ====
+Size: 206
+Time: 29.38941
+Test size 207
+==== A - 207 ====
+Size: 207
+Time: 84.45193
+==== A - 207 ====
+Size: 207
+Time: 28.47481
+Test size 208
+==== A - 208 ====
+Size: 208
+Time: 87.64920
+==== A - 208 ====
+Size: 208
+Time: 29.10182
+Test size 209
+==== A - 209 ====
+Size: 209
+Time: 86.33804
+==== A - 209 ====
+Size: 209
+Time: 30.17598
+Test size 210
+==== A - 210 ====
+Size: 210
+Time: 87.21145
+==== A - 210 ====
+Size: 210
+Time: 29.04135
+Test size 211
+==== A - 211 ====
+Size: 211
+Time: 87.16320
+==== A - 211 ====
+Size: 211
+Time: 28.84414
+Test size 212
+==== A - 212 ====
+Size: 212
+Time: 87.21187
+==== A - 212 ====
+Size: 212
+Time: 30.25915
+Test size 213
+==== A - 213 ====
+Size: 213
+Time: 88.31137
+==== A - 213 ====
+Size: 213
+Time: 30.48277
+Test size 214
+==== A - 214 ====
+Size: 214
+Time: 87.58309
+==== A - 214 ====
+Size: 214
+Time: 28.78428
+Test size 215
+==== A - 215 ====
+Size: 215
+Time: 87.82149
+==== A - 215 ====
+Size: 215
+Time: 29.94991
+Test size 216
