@@ -107,15 +107,7 @@ abstract class Rewriter {
 
   }
   def exprHash(e: Expr): String = {
-    e match {
-      case FunctionInvocation(fd, _) => fd.id.toString
-      case CaseClassSelector(ccd, cc, cl) => ccd.id.toString + "." + cl.toString
-      case CaseClass(ccd, _) => ccd.id.toString
-      case v : Variable       => v.toString
-      case t : BooleanLiteral => t.toString
-      case t : IntLiteral => t.toString
-      case t @ _ => t.getClass.getSimpleName
-    }
+    "ERROR"
   }
 
   def hashRule(r: RewriteRule): String = exprHash(r.lhs)
