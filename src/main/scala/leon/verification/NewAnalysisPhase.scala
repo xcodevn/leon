@@ -26,6 +26,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
   override val definedOptions : Set[LeonOptionDef] = Set(
     LeonValueOptionDef("functions", "--functions=f1:f2", "Limit verification to f1,f2,..."),
     LeonValueOptionDef("timeout",   "--timeout=T",       "Timeout after T seconds when trying to prove a verification condition."),
+    LeonValueOptionDef("numvc",   "--numvc=n",           "Only checking n VCs for testing purpose"),
     LeonFlagOptionDef("training",   "--training",        "Train leon by using @depend"),
     LeonFlagOptionDef("profiling",   "--profiling",      "Wait 10 sec for profiling"),
     LeonFlagOptionDef("create-testcase",   "--create-testcase",        "Write running options and output of verification into a file, and re-check in later running times ")
@@ -81,8 +82,17 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
     val lst =  ( for((funDef, vcs) <- vcs.toSeq.sortWith((a,b) => a._1 < b._1); vcInfo <- vcs) yield { 
       (funDef, vcInfo)
     }).par
+    val numVC = {
+      var r: Int = lst.size
+      vctx.context.options.foreach(op =>
+          op match {
+            case LeonValueOption("numvc", v) => r = v.toInt
+            case _ =>
+          })
+      r
+    }
 
-    lst.foreach( p => {
+    lst.take(numVC).foreach( p => {
       val (funDef, vcInfo) = p
       val t1 = System.nanoTime
 
