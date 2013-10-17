@@ -88,7 +88,10 @@ object MaSh {
       if (hints.isEmpty) "? %s: %s; %s".format(name, parents, features.map(feature2String(_)).mkString(" "))
       else "? %s: %s; %s; %s".format(name, parents, features.map(feature2String(_)).mkString(" "), hints.mkString(" "))
     }
+    val t1 = System.nanoTime
     val output = run(cmd, num)
+    val delta = System.nanoTime - t1
+    println("Query time " + delta / 1000.0 / 1000 / 1000)
     // reporter.info("Result: " + output)
 
     str2Suggest(output)

@@ -204,6 +204,7 @@ object BT {
     !isOdd(n) == isEven(n)
   } holds
   
+  /*
   @lemma @simp
   def sol2(a: Nat, b: Nat): Boolean = {
     isEven(plus(a, Succ(Succ(b)))) == isEven(plus(a, b))
@@ -224,6 +225,7 @@ object BT {
     }
   } ensuring {res => res && isEven(plus(n1, n2))}
 
+  */
   sealed abstract class AbsQueue
   case class Queue(front : List, rear : List) extends AbsQueue
 
@@ -594,7 +596,7 @@ object BT {
     case NoneH => isEmpty(h)
     case SomeH(v) => heapContent(h).contains(v)
   })
-  
+
   def deleteMin(h : Heap) : Heap = (h match {
     case EmptyH => EmptyH
     case ts : Nodes =>
@@ -634,32 +636,29 @@ object BT {
     }
   }
 
-  def isSorted(l: List): Boolean = l match {
+
+  def isSorted1(l: List): Boolean = l match {
     case Nil() => true
     case Cons(x, Nil()) => true
-    case Cons(x, Cons(y, ys)) => x <= y && isSorted(Cons(y, ys))
+    case Cons(x, Cons(y, ys)) => x <= y && isSorted1(Cons(y, ys))
   }   
 
-  /* Inserting element 'e' into a sorted list 'l' produces a sorted list with
-   * the expected content and size */
   def sortedIns(e: Int, l: List): List = {
-    require(isSorted(l))
+    require(isSorted1(l))
     l match {
       case Nil() => Cons(e,Nil())
       case Cons(x,xs) => if (x <= e) Cons(x,sortedIns(e, xs)) else Cons(e, l)
     } 
   } ensuring(res => content(res) == content(l) ++ Set(e) 
-                    && isSorted(res)
+                    && isSorted1(res)
                     && size(res) == size(l) + 1
             )
 
-  /* Insertion sort yields a sorted list of same size and content as the input
-   * list */
   def sort(l: List): List = (l match {
     case Nil() => Nil()
     case Cons(x,xs) => sortedIns(x, sort(xs))
   }) ensuring(res => content(res) == content(l) 
-                     && isSorted(res)
+                     && isSorted1(res)
                      && size(res) == size(l)
              )
 
@@ -801,6 +800,13 @@ object BT {
   def lContent(llist : LList) : Set[Int] = llist match {
     case LNil() => Set.empty[Int]
     case LCons(x, xs) => content(x) ++ lContent(xs)
+  }
+
+  def isSorted(list : List) : Boolean = list match {
+    case Nil() => true
+    case Cons(_, Nil()) => true
+    case Cons(x1, Cons(x2, _)) if(x1 > x2) => false
+    case Cons(_, xs) => isSorted(xs)
   }
 
   def lIsSorted(llist : LList) : Boolean = llist match {

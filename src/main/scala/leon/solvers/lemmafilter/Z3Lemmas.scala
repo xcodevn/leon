@@ -42,6 +42,7 @@ class ExtendedFairZ3Solver(context : LeonContext, program: Program) extends Fair
   def filter(expression: Expr) = {
     /* Only use filter in the first time of calling this function */
     if(lemmaFlag) {
+      val t1 = System.nanoTime
       filterOption match {
         case "MaSh" =>
           val MaShfilter = new MaShFilter(context, program)
@@ -50,8 +51,12 @@ class ExtendedFairZ3Solver(context : LeonContext, program: Program) extends Fair
             curFun.get.dependencies match { case Some(deps) => prepareLemmas(funs.filter(f => deps.contains(f.id.name.toString))); case _ => }
           } else {
             val m = funs.tail.filter(f => LemmaTools.isTrueLemma(f) && f.annotations.contains("lemma")).map( f => (f, Error(":-)"))).toMap
-            if (m.size > 0)
-              prepareLemmas(MaShfilter.filter(expression, m, numLemmasOption) )
+            if (m.size > 0) {
+              val lst = MaShfilter.filter(expression, m, numLemmasOption) 
+              val delta = System.nanoTime - t1
+              println("MaSh time " + delta / 1000.0 / 1000 / 1000 )
+              prepareLemmas(lst)
+            }
           }
           MaShfilter.fairZ3.free() // go away z3 ;)
 
@@ -65,6 +70,8 @@ class ExtendedFairZ3Solver(context : LeonContext, program: Program) extends Fair
             val m = funs.tail.filter(f => LemmaTools.isTrueLemma(f) && f.annotations.contains("lemma")).map( f => (f, MePofilter.genVC(f))).toMap
             if (m.size > 0) {
               val res = MePofilter.filter(expression, m, numLemmasOption)
+              val delta = System.nanoTime - t1
+              println("MePo time " + delta / 1000.0 / 1000 / 1000 )
               prepareLemmas(res)
             }
           }

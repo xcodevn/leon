@@ -35,7 +35,7 @@ def main():
 	s = 0
 	for i in xrange(TIMES):
 		t1 = datetime.datetime.now()
-		execCmd("./leon ./BT/bigTestcase.scala --filter=MePo >/dev/null")
+		execCmd("./leon ./BT/bigTestcase.scala >/dev/null")
 		t2 = datetime.datetime.now()
 		delta = (t2-t1).total_seconds()
 		s = s + delta

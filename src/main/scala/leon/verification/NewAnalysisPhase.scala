@@ -326,9 +326,12 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
     val isNotSimp = (isFlagTurnOn("codegen", ctx) || isFlagTurnOn("evalground", ctx))
 
     if (doTraining) {
+      val t1 = System.nanoTime
       reporter.info("Training MaSh Filter from user guide...")
       val MaShFilter = new MaShFilter(ctx, program)
       MaShFilter.train
+      val delta = System.nanoTime - t1
+      println("Training time "  + delta / 1000.0 / 1000 / 1000)
       MaShFilter.fairZ3.free()
     }
 
