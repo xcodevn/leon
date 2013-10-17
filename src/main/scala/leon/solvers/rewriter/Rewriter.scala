@@ -11,7 +11,7 @@ import purescala.TypeTrees._
 import purescala.Trees._
 import purescala.Extractors._
 import collection.mutable.MutableList
-import collection.mutable.{Map => MutableMap}
+import collection.mutable.{Map => MutableMap, Set => MutableSet}
 
 abstract class SIMPRESULT
 case class SIMP_SUCCESS() extends SIMPRESULT
@@ -158,6 +158,8 @@ object TrivialRewriter2 extends Rewriter {
 
 class SimpleRewriter extends Rewriter {
 
+  val sop: MutableSet[RewriteRule] = MutableSet.empty
+  def getSOPRules() : Set[RewriteRule] = sop.toSet
   def isPermutationRule(r: RewriteRule): Boolean = {
     val m: MutableMap[Identifier, Expr] = MutableMap.empty
     if (r.conds.size == 0)  {
@@ -491,9 +493,11 @@ class SimpleRewriter extends Rewriter {
             // println("after instantiate " + rhs + " became " + new_rhs)
             if (!rule.isPermutation) {
               reporter.debug("By using rule: \n" + rule + "\nwe simplify \n====\n" + expr + "\n----\ninto\n----\n" + new_rhs + "\n====")
+              sop += rule
               return (new_rhs, SIMP_SUCCESS())
             } else if (expr.toString < new_rhs.toString) {
                 reporter.debug("By using permutation rule: \n" + rule + "\nwe simplify \n====\n" + expr + "\n----\ninto\n----\n" + new_rhs + "\n====")
+                sop += rule
                 return (new_rhs, SIMP_SUCCESS())
               }
           case _ => 

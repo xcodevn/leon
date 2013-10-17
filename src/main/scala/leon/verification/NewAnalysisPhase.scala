@@ -81,7 +81,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
 
     val lst =  ( for((funDef, vcs) <- vcs.toSeq.sortWith((a,b) => a._1 < b._1); vcInfo <- vcs) yield { 
       (funDef, vcInfo)
-    }).par
+    })
     val numVC = {
       var r: Int = lst.size
       vctx.context.options.foreach(op =>
@@ -91,6 +91,10 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
           })
       r
     }
+
+    //
+    //
+    val out = new FileWriter("kb.ml")
 
     lst.take(numVC).foreach( p => {
       val (funDef, vcInfo) = p
@@ -120,11 +124,19 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
           // In fact, we re-order fun in the best way we can, not filtering at all :|
           // println("Before " + funLst.map(_.id.toString))
           val lst = Filtering.filter(Seq(ft), svc, funLst.filter(_ < funDef))
+          // val lst = funLst.filter(_ < funDef)
           // println("After  " + lst.map(_.id.toString))
 
-          for (fun <- lst) {
-            val rus = Rules.createFunctionRewriteRules(fun, program)
-            for (ru <- rus) simpleRewriter.addRewriteRule(ru)
+          val rule2FunDef: Map[RewriteRule, FunDef] = locally {
+            var t : Map[RewriteRule, FunDef] = Map.empty
+            for (fun <- lst) {
+              val rus = Rules.createFunctionRewriteRules(fun, program)
+              for (ru <- rus) {
+                simpleRewriter.addRewriteRule(ru)
+                t += (ru -> fun)
+              }
+            }
+            t
           }
 
           //println("Using simplifier")
@@ -160,6 +172,10 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
           }
 
           val ss_svc_temp1 = rec_simp(svc)
+          val sopr = simpleRewriter.getSOPRules()
+          val sopfd = sopr.map(x => rule2FunDef.get(x)).filter(_ != None).map(_.get.id)
+          println("SOP Funtion " + sopfd)
+          out.write(sopfd.mkString(" ") + "\n")
 
           /* If simplied expr is too long (8 times longer than original expr) , back to original expr */
           val ss_svc_temp = if (ss_svc_temp1.toString.size > 8 * svc.toString.size) svc else ss_svc_temp1
@@ -246,6 +262,8 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
         }
       }
     })
+
+    out.close()
 
     val report = new VerificationReport(vcs)
     report
