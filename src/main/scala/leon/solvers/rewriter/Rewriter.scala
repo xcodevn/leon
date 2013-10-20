@@ -75,6 +75,8 @@ abstract class Rewriter {
     reporter = rp
   }
 
+  def getRules =  { this.rules.values.flatten.toList }
+
   def pp_rules = {
     reporter.debug("List of current rules:")
     var c = 0

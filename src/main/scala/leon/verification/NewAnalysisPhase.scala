@@ -13,8 +13,10 @@ import solvers._
 import solvers.z3._
 
 import scala.collection.mutable.{Set => MutableSet}
+import scala.collection.mutable.MutableList
 
 import leon.solvers.lemmafilter._
+import leon.solvers.lemmafilter.MaLe._
 import leon.solvers.rewriter._
 
 import java.io._
@@ -94,9 +96,20 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
 
     //
     //
-    val out = new FileWriter("kb.ml")
+    // val out = new FileWriter("kb.ml")
+    // val simpleRewriter = new SimpleRewriter
+    // val egs = new MutableList[ (Expr, List[RewriteRule])] ()
+    val ml = new MaLeFilter()
+    if (useMaLe) {
+      ml.loadData("ml.dat")
+    }
 
-    lst.take(numVC).foreach( p => {
+    var c1 = 0
+    var c2 = 0
+    val s1 = System.nanoTime
+    lst.take(numVC).par.foreach( p => {
+      val simpleRewriter = new SimpleRewriter
+      simpleRewriter.clearRules
       val (funDef, vcInfo) = p
       val t1 = System.nanoTime
 
@@ -112,10 +125,11 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
         case Some((program, ctx)) => {
           reporter.info("Simplify: \n" + svc + "\n======")
           // Push
-          val simpleRewriter = new SimpleRewriter
           if(funDef.annotations.contains("induct")) {
             val iT = new ExtendedInductionTactic(reporter)
-            for (r <- iT.generateInductiveHypothesisRewriteRules(funDef)) simpleRewriter.addRewriteRule(r)
+            for (r <- iT.generateInductiveHypothesisRewriteRules(funDef)) {
+              simpleRewriter.addRewriteRule(r)
+            }
           }
           simpleRewriter.setReporter(reporter)
           Rules.addDefaultRules(simpleRewriter)
@@ -126,14 +140,33 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
           val lst = Filtering.filter(Seq(ft), svc, funLst.filter(_ < funDef))
           // val lst = funLst.filter(_ < funDef)
           // println("After  " + lst.map(_.id.toString))
+          val fts = ml.getFeatureList(svc)
 
           val rule2FunDef: Map[RewriteRule, FunDef] = locally {
             var t : Map[RewriteRule, FunDef] = Map.empty
+
             for (fun <- lst) {
               val rus = Rules.createFunctionRewriteRules(fun, program)
               for (ru <- rus) {
-                simpleRewriter.addRewriteRule(ru)
-                t += (ru -> fun)
+                val t1 = System.nanoTime
+                if (useMaLe) {
+                  val pr = ml.getPr(ru.name, fts)
+                  val del = System.nanoTime - t1
+                  // println("Pr time " + del / 1000.0 / 1000)
+                  if (pr > 1e-6) {
+                    // println(" Using rule " + ru.name + " cause by pr " + pr)
+                    simpleRewriter.addRewriteRule(ru)
+                    c1 = c1 + 1
+                    t += (ru -> fun)
+                  } else {
+                    c2 = c2 + 1
+                    // println(" Don't use rule " + ru.name + " cause by pr " + pr)
+                  }
+
+                } else {
+                  simpleRewriter.addRewriteRule(ru)
+                  t += (ru -> fun)
+                }
               }
             }
             t
@@ -172,10 +205,11 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
           }
 
           val ss_svc_temp1 = rec_simp(svc)
-          val sopr = simpleRewriter.getSOPRules()
-          val sopfd = sopr.map(x => rule2FunDef.get(x)).filter(_ != None).map(_.get.id)
-          println("SOP Funtion " + sopfd)
-          out.write(sopfd.mkString(" ") + "\n")
+          // val sopr = simpleRewriter.getSOPRules()
+          // egs.+= ((svc, sopr.toList))
+          // val sopfd = sopr.map(x => x.name)
+          // println("SOP Funtion " + sopfd)
+          // out.write(sopfd.mkString(" ") + "\n")
 
           /* If simplied expr is too long (8 times longer than original expr) , back to original expr */
           val ss_svc_temp = if (ss_svc_temp1.toString.size > 8 * svc.toString.size) svc else ss_svc_temp1
@@ -263,7 +297,16 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
       }
     })
 
-    out.close()
+    val d1 = System.nanoTime - s1
+    println("Running time " + d1 / 1000.0 / 1000 / 1000)
+    println("C1  " + c1 + "  c2 " + c2)
+
+    if (doTraining) {
+      val ml = new MaLeFilter()
+      // ml.training(egs.toList, simpleRewriter.getRules)
+    }
+
+    // out.close()
 
     val report = new VerificationReport(vcs)
     report
@@ -298,10 +341,11 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
     out.close
   }
 
+  var doTraining: Boolean = false
+  var useMaLe: Boolean = false
   override def run(ctx: LeonContext)(program: Program) : VerificationReport = {
     var functionsToAnalyse   = Set[String]()
     var timeout: Option[Int] = None
-    var doTraining: Boolean = false
     var create_testcase: Boolean = false
 
     for(opt <- ctx.options) opt match {
@@ -310,6 +354,8 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
 
       case v @ LeonValueOption("timeout", _) =>
         timeout = v.asInt(ctx)
+
+      case v @ LeonValueOption("filter", "MaLe") => useMaLe = true
 
       case LeonFlagOption("training", v) => doTraining = v
 
@@ -343,12 +389,14 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
 
     val isNotSimp = (isFlagTurnOn("codegen", ctx) || isFlagTurnOn("evalground", ctx))
 
+    /*
     if (doTraining) {
       reporter.info("Training MaSh Filter from user guide...")
       val MaShFilter = new MaShFilter(ctx, program)
       MaShFilter.train
       MaShFilter.fairZ3.free()
     }
+    */
 
     val baseFactories = Seq(
       SolverFactory(() => new ExtendedFairZ3Solver(ctx, program))
