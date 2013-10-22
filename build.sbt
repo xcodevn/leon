@@ -23,6 +23,7 @@ if(System.getProperty("sun.arch.data.model") == "64") {
 resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
 libraryDependencies ++= Seq(
+    "org.scala-lang" % "scala-actors" % "2.10.2",
     "org.scala-lang" % "scala-compiler" % "2.10.2",
     "org.scalatest" % "scalatest_2.10" % "2.0.M5b" % "test" excludeAll(ExclusionRule(organization="org.scala-lang")),
     "junit" % "junit" % "4.8" % "test",

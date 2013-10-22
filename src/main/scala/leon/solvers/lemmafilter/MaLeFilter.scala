@@ -1,4 +1,4 @@
-package leon.solvers.lemmafilter.MaLe
+package leon.solvers.lemmafilter
 
 import leon._
 import z3.scala._

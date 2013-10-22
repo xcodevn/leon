@@ -1,4 +1,4 @@
-package leon.solvers.lemmafilter.MaLe;
+package leon.solvers.lemmafilter;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
