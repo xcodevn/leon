@@ -20,6 +20,7 @@ import ap.SimpleAPI.ProverStatus
 import ap.terfor.preds.Predicate
 import leon.evaluators.EvaluationResults
 
+/*
 object TestDebug {
   var debug_on = false
 
@@ -38,40 +39,88 @@ object TestDebug {
     }
   }
 }
+*/
 
-class PrincessSolver(val context : LeonContext, val program: Program)
+class PrincessSolver(val context: LeonContext, val program: Program)
   extends Solver
-    with TimeoutAssumptionSolver
-    with LeonComponent {
+  with TimeoutAssumptionSolver
+  with LeonComponent {
 
   val name = "Princess"
   val description = "Princess Solver"
-  
+
+  val reporter: Reporter = context.reporter
+  val unrollingBank: PrincessUnrollingBank = new PrincessUnrollingBank(this, reporter)
+
   protected var interrupted = false;
 
-  override def interrupt() { interrupted = true}
+  override def interrupt() { interrupted = true }
   override def getUnsatCore: Set[leon.purescala.Trees.Expr] = Set()
-  override def recoverInterrupt() { interrupted = false}
-  override def free() = {prover = null}
+  override def recoverInterrupt() { interrupted = false }
+  override def free() = { if (prover != null) { prover.shutDown } }
   override def innerCheckAssumptions(assumptions: Set[leon.purescala.Trees.Expr]): Option[Boolean] = None
-  override  def innerCheck: Option[Boolean] = None
+  override def innerCheck: Option[Boolean] =
+    try {
+      this.fairCheck(Set())
+    } catch {
+      case CantTranslateException(msg) =>
+        reporter.error(msg); None
+      case e: Throwable =>
+        reporter.error(" - Got this exception:")
+        reporter.error(e)
+        e.printStackTrace()
+        None
+    }
+
   override val definedOptions: Set[LeonOptionDef] = Set(
     LeonFlagOptionDef("checkmodels", "--checkmodels", "Double-check counter-examples with evaluator"),
+    LeonFlagOptionDef("feelinglucky", "--feelinglucky", "Use evaluator to find counter-examples early"),
+    LeonFlagOptionDef("codegen",            "--codegen",            "Use compiled evaluator instead of interpreter"),
     LeonFlagOptionDef("princess", "--princess", "Use prover Princess"),
     LeonValueOptionDef("princesstimeout", "--princesstimeout", "Set timeout in 1 second"),
     LeonValueOptionDef("unrolling", "--unrolling", "Set unrolling number"),
-    LeonFlagOptionDef("onlyprove", "--onlyprove", "Only prove the correctness, don't find the counter example"),
-    LeonFlagOptionDef("debug", "--debug", "Set debug mode"))
-    
-  val reporter: Reporter = context.reporter
+    LeonFlagOptionDef("onlyprove", "--onlyprove", "Only prove the correctness, don't find the counter example"))
+
+  // What wouldn't we do to avoid defining vars?
+  val (feelingLucky, checkModels, useCodeGen, evalGroundApps, unrollUnsatCores, usePrincess, timeout, unrollingNumber, onlyProve) = locally {
+    var lucky = false
+    var check = false
+    var codegen = false
+    var evalground = false
+    var unrollUnsatCores = false
+    var usePrincess = false
+    var timeout = 60
+    var unrollingNumber = 0
+    var onlyProve = false
+
+    for (opt <- context.options) opt match {
+      case LeonFlagOption("checkmodels", v) => check = v
+      case LeonFlagOption("feelinglucky", v) => lucky = v
+      case LeonFlagOption("codegen", v) => codegen = v
+      case LeonFlagOption("evalground", v) => evalground = v
+      case LeonFlagOption("fairz3:unrollcores", v) => unrollUnsatCores = v
+      case LeonFlagOption("princess", v) => usePrincess = v
+      case LeonFlagOption("onlyprove", v) => onlyProve = v
+
+      case LeonValueOption("princesstimeout", value) => timeout = value.toInt
+      case LeonValueOption("unrolling", value) => unrollingNumber = value.toInt
+      case _ =>
+    }
+
+    (lucky, check, codegen, evalground, unrollUnsatCores, usePrincess, timeout, unrollingNumber, onlyProve)
+  }
+
+  private val evaluator: Evaluator = if (useCodeGen) {
+    // TODO If somehow we could not recompile each time we create a solver,
+    // that would be good?
+    new CodeGenEvaluator(context, program)
+  } else {
+    new DefaultEvaluator(context, program)
+  }
+  def getEvaluator: Evaluator = evaluator
 
   var prover: SimpleAPI = null
   var allConstraints: Seq[IExpression] = Seq()
-
-  var unrollingBank: PrincessUnrollingBank = null
-
-  //SimpleAPI(enableAssert = true, dumpSMT = true, smtDumpBasename = "princess_debug")
-  //val prover = SimpleAPI.spawnWithAssertions
 
   val varMap: MutableMap[Identifier, ITerm] = MutableMap.empty
   val reverseVarMap: MutableMap[ITerm, Identifier] = MutableMap.empty
@@ -91,44 +140,6 @@ class PrincessSolver(val context : LeonContext, val program: Program)
   var intersectFun: IFunction = null
   var diffFun: IFunction = null
   var divisible: IFunction = null
-
-  // What wouldn't we do to avoid defining vars?
-  val (feelingLucky, checkModels, useCodeGen, evalGroundApps, unrollUnsatCores, usePrincess, timeout, unrollingNumber, onlyProve) = locally {
-    var lucky = false
-    var check = false
-    var codegen = false
-    var evalground = false
-    var unrollUnsatCores = false
-    var usePrincess = false
-    var timeout = 60
-    var unrollingNumber = 0
-    var onlyProve = false
-
-    TestDebug.debug_on = false
-
-    for (opt <- context.options) opt match {
-      case LeonFlagOption("checkmodels", v) => check = v
-      case LeonFlagOption("feelinglucky", v) => lucky = v
-      case LeonFlagOption("codegen", v) => codegen = v
-      case LeonFlagOption("evalground", v) => evalground = v
-      case LeonFlagOption("fairz3:unrollcores", v) => unrollUnsatCores = v
-      case LeonFlagOption("princess", v) => usePrincess = v
-      case LeonFlagOption("debug", v) => TestDebug.debug_on = v
-      case LeonFlagOption("onlyprove", v) => onlyProve = v
-
-      case LeonValueOption("princesstimeout", value) => timeout = value.toInt
-      case LeonValueOption("unrolling", value) => unrollingNumber = value.toInt
-      case _ =>
-    }
-
-    (lucky, check, codegen, evalground, unrollUnsatCores, usePrincess, timeout, unrollingNumber, onlyProve)
-  }
-
-  private var evaluator: Evaluator = null
-  def getEvaluator: Evaluator = evaluator
-
-  private var terminator: TerminationChecker = null
-  def getTerminator: TerminationChecker = terminator
 
   private var freeVarsInVC = Set[Identifier]()
   private var frameExpressions = List[List[Expr]](Nil)
@@ -155,18 +166,35 @@ class PrincessSolver(val context : LeonContext, val program: Program)
     preDefinedOperationMap.clear
   }
 
-  def resetProver() {
-    prover = SimpleAPI(enableAssert = true, dumpSMT = true, smtDumpBasename = "princess_debug", tightFunctionScopes = false)
-    allConstraints = Seq()
-    unrollingBank = new PrincessUnrollingBank(this, reporter)
-    freeVarsInVC = Set()
-    frameExpressions = List[List[Expr]](Nil)
-    emptySet = prover.createFunction("EmptySet", 1)
-    emptySetTerm = IFunApp(emptySet, Seq(prover.createConstant))
-    unionFun = prover.createFunction("union", 2)
-    intersectFun = prover.createFunction("intersect", 2)
-    diffFun = prover.createFunction("diff", 2)
-    divisible = prover.createFunction("divisible", 2)
+  private var alreadySetup = false
+  def setupProver() {
+    if (!alreadySetup) {
+      prover = SimpleAPI(enableAssert = true, dumpSMT = true, smtDumpBasename = "princess_debug", tightFunctionScopes = false)
+      allConstraints = Seq()
+      freeVarsInVC = Set()
+      frameExpressions = List[List[Expr]](Nil)
+
+      emptySet = prover.createFunction("EmptySet", 1)
+      emptySetTerm = IFunApp(emptySet, Seq(prover.createConstant))
+      unionFun = prover.createFunction("union", 2)
+      intersectFun = prover.createFunction("intersect", 2)
+      diffFun = prover.createFunction("diff", 2)
+      divisible = prover.createFunction("divisible", 2)
+
+      val arithAxioms = this.extractArithmeticAxioms()
+      val adtAxioms = this.extractAxiomsFromADTs()
+      val setAxioms = this.extractAxiomsAboutSetTheory()
+
+      this.addConstraints(arithAxioms)
+      this.addConstraints(adtAxioms)
+      this.addConstraints(setAxioms)
+      val abc = this.boolVarMap.toList.filter(_._1.name.contains("errorValue"))
+      for ((_, b) <- abc) {
+        this.addConstraints(Seq(!b))
+      }
+
+      alreadySetup = true
+    }
   }
 
   // helper function to create nested universal formula: forall x, y, z, ... f([x, y, z])
@@ -512,7 +540,7 @@ class PrincessSolver(val context : LeonContext, val program: Program)
               })
             }
             */
-            println("caseDef debug:\n" + caseDef)
+            //println("caseDef debug:\n" + caseDef)
             List()
           }).flatten
 
@@ -630,7 +658,7 @@ class PrincessSolver(val context : LeonContext, val program: Program)
     Some(true)
   }
 
-/*
+  /*
   override def solveSAT(vc: Expr): (Option[Boolean], Map[Identifier, Expr]) = {
     if (!usePrincess) {
       (None, Map.empty)
@@ -695,6 +723,8 @@ class PrincessSolver(val context : LeonContext, val program: Program)
   }
 
   def assertCnstr(expression: Expr) {
+    this.resetAllVarMap()
+    this.setupProver()
     freeVarsInVC ++= variablesOf(expression)
     frameExpressions = (expression :: frameExpressions.head) :: frameExpressions.tail
     val newClauses = unrollingBank.scanForNewTemplates(expression)
@@ -702,16 +732,14 @@ class PrincessSolver(val context : LeonContext, val program: Program)
   }
 
   def addAssumptions(exprs: Seq[IExpression]) {
-    TestDebug("[AddAssumption]", "")
     for (e <- exprs) {
-      TestDebug("[NODEBUG]", "adding " + e)
+      reporter.debug("Adding assumption: " + e)
       prover !! e.asInstanceOf[IFormula]
     }
   }
 
   def addConstraints(exprs: Seq[IExpression]) {
     allConstraints = allConstraints ++ exprs
-    TestDebug("[AddConstraints]", "")
     for (e <- exprs) {
       val newFormula = e
       /*
@@ -729,7 +757,7 @@ class PrincessSolver(val context : LeonContext, val program: Program)
           case e => e
         })
       */
-      TestDebug("[NODEBUG]", "adding " + newFormula)
+      reporter.debug("Adding constraints: " + newFormula)
       prover !! newFormula.asInstanceOf[IFormula]
     }
   }
@@ -827,10 +855,9 @@ class PrincessSolver(val context : LeonContext, val program: Program)
         })
 
         def chooseSuitableCaseDef(allCaseDef: Seq[CaseClassDef]): CaseClassDef =
-          allCaseDef.reduce((e1, e2) => 
+          allCaseDef.reduce((e1, e2) =>
             /*if (e1.allIdentifiers.size < e2.allIdentifiers.size) e1 else e2 */
-            e1
-          )
+            e1)
 
         // if cannot find any type
         if (possibleCaseDefs.isEmpty) {
@@ -871,7 +898,7 @@ class PrincessSolver(val context : LeonContext, val program: Program)
         val term = mapVar.asInstanceOf[ITerm]
         /*val args = caseClssDef.allIdentifiers.toSeq*/
         val args = Seq(caseClssDef.id)
-        
+
         val mappingArgs = args.map(e => createFreshMapping(e.getType).asInstanceOf[ITerm])
 
         val formula = term === mappingAdtConstructor(caseClssDef, CaseClassType(caseClssDef), mappingArgs)
@@ -955,8 +982,9 @@ class PrincessSolver(val context : LeonContext, val program: Program)
     while (!foundDefinitiveAnswer && !interrupted) {
       reporter.info(" - Running Princess search...")
 
-      TestDebug("[Princess][fairCheck]", "Unroll.  Assumptions:\n" + unrollingBank.currentPrincessBlockers.mkString("  &&  "))
-      //TestDebug("[Princess][fairCheck]", " - Searching in all constraints:\n" + allConstraints.mkString("\n"))
+
+      reporter.debug("Unroll.  Assumptions:\n" + unrollingBank.currentPrincessBlockers.mkString("  &&  "))
+      reporter.debug(" - Searching in all constraints:\n" + allConstraints.mkString("\n"))
 
       prover.push
       val res =
@@ -1016,8 +1044,10 @@ class PrincessSolver(val context : LeonContext, val program: Program)
             }
 
             prover.pop
+            
+            val debug_on = false
 
-            if (!TestDebug.debug_on) {
+            if (!debug_on) {
               if (unrollingCount >= unrollingNumber) {
                 princessTime.start
                 prover.push
@@ -1047,7 +1077,7 @@ class PrincessSolver(val context : LeonContext, val program: Program)
                         reporter.warning("TIMEOUT in " + timeout + " second")
                     }
                     prover.pop
-                    
+
                   case _ =>
                     reporter.fatalError("Unexpected case here !!!")
                 }
@@ -1179,7 +1209,7 @@ class PrincessSolver(val context : LeonContext, val program: Program)
               val newClauses = unrollingBank.unlock(id.asInstanceOf[IFormula])
               unlockingTime.stop
 
-              TestDebug("[NODEBUG]", "\n[" + unrollingCount + "]Unrolling to new clauses (" + newClauses.size + ") for id = " + id + ":\n" + newClauses.mkString("\n"))
+              reporter.debug("\n[" + unrollingCount + "]Unrolling to new clauses (" + newClauses.size + ") for id = " + id + ":\n" + newClauses.mkString("\n"))
 
               unrollingTime.start
               this.addConstraints(newClauses)
@@ -1550,7 +1580,7 @@ class PrincessSolver(val context : LeonContext, val program: Program)
         case f: IFormula => Some(letFormulas &&& f)
         case t: ITerm =>
           if (!allLetFormulas.isEmpty)
-            TestDebug("[NODEBUG]", "allLetFormulas = \n" + allLetFormulas.mkString("\n"))
+            reporter.debug("allLetFormulas = \n" + allLetFormulas.mkString("\n"))
           assert(allLetFormulas.isEmpty); Some(t)
       }
     finalOutput

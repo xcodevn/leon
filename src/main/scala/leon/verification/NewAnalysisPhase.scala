@@ -8,18 +8,15 @@ import purescala.Definitions._
 import purescala.Trees._
 import purescala.TreeOps._
 import purescala.TypeTrees._
-
 import solvers._
 import solvers.z3._
-
 import scala.collection.mutable.{Set => MutableSet}
 import scala.collection.mutable.MutableList
-
 import leon.solvers.lemmafilter._
 import leon.solvers.lemmafilter.MaLe._
 import leon.solvers.rewriter._
-
 import java.io._
+import leon.solvers.princess.PrincessSolver
 
 object NewAnalysisPhase extends AnalysisPhaseClass {
   override val name = "New Analysis phase"
@@ -399,7 +396,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
     */
 
     val baseFactories = Seq(
-      SolverFactory(() => new ExtendedFairZ3Solver(ctx, program))
+      SolverFactory(() => new PrincessSolver(ctx, program))
     )
 
     val solverFactories = timeout match {

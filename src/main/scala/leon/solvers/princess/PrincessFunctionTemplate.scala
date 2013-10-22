@@ -26,7 +26,7 @@ class PrincessFunctionTemplate private (
   private val isTerminatingForAllInputs: Boolean = (
     isRealFunDef
     && !funDef.hasPrecondition 
-    && solver.getTerminator.terminates(funDef).isGuaranteed
+    //&& solver.getTerminator.terminates(funDef).isGuaranteed
     )
 
   private val asClauses: Seq[Expr] = {
