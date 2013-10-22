@@ -28,6 +28,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
     LeonValueOptionDef("timeout",   "--timeout=T",       "Timeout after T seconds when trying to prove a verification condition."),
     LeonValueOptionDef("numvc",   "--numvc=n",           "Only checking n VCs for testing purpose"),
     LeonFlagOptionDef("training",   "--training",        "Train leon by using @depend"),
+    LeonFlagOptionDef("parallel",   "--parallel",        "Checking VCs in parallel"),
     LeonFlagOptionDef("profiling",   "--profiling",      "Wait 10 sec for profiling"),
     LeonFlagOptionDef("create-testcase",   "--create-testcase",        "Write running options and output of verification into a file, and re-check in later running times ")
   )
@@ -79,11 +80,12 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
       case _      => (new TrivialFilter, Seq())
     }
 
-    val lst =  ( for((funDef, vcs) <- vcs.toSeq.sortWith((a,b) => a._1 < b._1); vcInfo <- vcs) yield { 
+    val lst1 =  ( for((funDef, vcs) <- vcs.toSeq.sortWith((a,b) => a._1 < b._1); vcInfo <- vcs) yield { 
       (funDef, vcInfo)
-    }).par
+    })
+    
     val numVC = {
-      var r: Int = lst.size
+      var r: Int = lst1.size
       vctx.context.options.foreach(op =>
           op match {
             case LeonValueOption("numvc", v) => r = v.toInt
@@ -91,6 +93,10 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
           })
       r
     }
+
+    val lst = if (doParallel) lst1.par else lst1
+
+    val t1 = System.nanoTime
 
     lst.take(numVC).foreach( p => {
       val (funDef, vcInfo) = p
@@ -181,12 +187,6 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
         vcInfo.time = Some(dt)
         true
       } else {
-      // try all solvers until one returns a meaningful answer
-      /*
-      val solvers = Seq(
-      SolverFactory(() => new ExtendedFairZ3Solver(ctx, program))
-      }
-      */
       solvers.find(sf => {
         val s = sf.getNewSolver
         try {
@@ -247,6 +247,9 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
       }
     })
 
+    val delta = (System.nanoTime - t1) / 1000.0 / 1000 / 1000
+    println("Running time " + delta)
+
     val report = new VerificationReport(vcs)
     report
   }
@@ -280,6 +283,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
     out.close
   }
 
+  var doParallel = false
   override def run(ctx: LeonContext)(program: Program) : VerificationReport = {
     var functionsToAnalyse   = Set[String]()
     var timeout: Option[Int] = None
@@ -294,6 +298,8 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
         timeout = v.asInt(ctx)
 
       case LeonFlagOption("training", v) => doTraining = v
+
+      case LeonFlagOption("parallel", v) => doParallel = v
 
       case LeonFlagOption("create-testcase", v) => create_testcase = v
 
