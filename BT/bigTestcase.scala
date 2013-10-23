@@ -622,6 +622,7 @@ object BT {
     findMin(h2) == SomeH(0)
   }.holds
   
+/*
   def sanity3() : Boolean = {
     val h0 = insert(42, insert(0, insert(3, insert(12, EmptyH))))
     val h1 = deleteMin(h0)
@@ -635,7 +636,7 @@ object BT {
       case SomeH(x2) => if(x < x2) SomeH(x) else SomeH(x2)
     }
   }
-
+*/
 
   def isSorted1(l: List): Boolean = l match {
     case Nil() => true
@@ -1040,6 +1041,7 @@ object BT {
   }) ensuring(_ >= 0)
 
   // <<insert element x into the tree t>>
+/*
   def ins(x: Int, t: Tree): Tree = {
     require(redNodesHaveBlackChildren(t) && blackBalanced(t))
     t match {
@@ -1053,6 +1055,7 @@ object BT {
                    && size(t) <= size(res) && size(res) <= size(t) + 1
                    && redDescHaveBlackChildren(res)
                    && blackBalanced(res))
+*/
 
   def makeBlack(n: Tree): Tree = {
     require(redDescHaveBlackChildren(n) && blackBalanced(n))
@@ -1062,10 +1065,12 @@ object BT {
     }
   } ensuring(res => redNodesHaveBlackChildren(res) && blackBalanced(res))
 
+/*
   def add(x: Int, t: Tree): Tree = {
     require(redNodesHaveBlackChildren(t) && blackBalanced(t))
     makeBlack(ins(x, t))
   } ensuring (res => content(res) == content(t) ++ Set(x) && redNodesHaveBlackChildren(res) && blackBalanced(res))
+*/
   
   def balance(c: Color, a: Tree, x: Int, b: Tree): Tree = {
     NodeR(c,a,x,b) match {
