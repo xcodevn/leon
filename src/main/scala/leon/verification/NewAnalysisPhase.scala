@@ -12,12 +12,13 @@ import purescala.TypeTrees._
 import solvers._
 import solvers.z3._
 
-import scala.collection.mutable.{Set => MutableSet}
+import scala.collection.mutable.{Set => MutableSet, SynchronizedQueue => SQueue}
 
 import leon.solvers.lemmafilter._
 import leon.solvers.rewriter._
 
 import java.io._
+import java.util.concurrent.Semaphore
 
 object NewAnalysisPhase extends AnalysisPhaseClass {
   override val name = "New Analysis phase"
@@ -95,6 +96,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
     }
 
     val lst = if (doParallel) lst1.par else lst1
+    val sem = new Semaphore(16)
 
     val t1 = System.nanoTime
 
@@ -187,8 +189,9 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
         vcInfo.time = Some(dt)
         true
       } else {
-      solvers.find(sf => {
-        val s = sf.getNewSolver
+      sem.acquire()
+      val s = queue.dequeue()
+      if (s.isInstanceOf[FairZ3Solver]) s.asInstanceOf[FairZ3Solver].push()
         try {
           reporter.debug("Trying with solver: " + s.name)
           if (s.isInstanceOf[ExtendedFairZ3Solver]) {
@@ -236,13 +239,9 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
               true
           }
         } finally {
-          s.free()
-        }}) match {
-          case None => {
-            vcInfo.hasValue = true
-            reporter.warning("==== UNKNOWN ====")
-          }
-          case _ =>
+          if (s.isInstanceOf[FairZ3Solver]) s.asInstanceOf[FairZ3Solver].pop()
+          queue.enqueue(s)
+          sem.release()
         }
       }
     })
@@ -284,6 +283,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
   }
 
   var doParallel = false
+  val queue = new SQueue[Solver]()
   override def run(ctx: LeonContext)(program: Program) : VerificationReport = {
     var functionsToAnalyse   = Set[String]()
     var timeout: Option[Int] = None
@@ -345,6 +345,8 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
       SolverFactory(() => new ExtendedFairZ3Solver(ctx, program))
     )
 
+    for (c <- 0 until 16) { queue.enqueue( new FairZ3Solver(ctx, program) ) }
+
     val solverFactories = timeout match {
       case Some(sec) =>
         baseFactories.map { sf =>
@@ -359,8 +361,11 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
     val report = {
       reporter.debug("Running verification condition generation...")
       val vcs = generateVerificationConditions(reporter, program, functionsToAnalyse)
-      if (!isNotSimp)
+      if (!isNotSimp) { while (true) {
         checkVerificationConditions(vctx, vcs, Some(program, ctx))
+         }
+        checkVerificationConditions(vctx, vcs, Some(program, ctx))
+      }
       else
         checkVerificationConditions(vctx, vcs, None)
     }
