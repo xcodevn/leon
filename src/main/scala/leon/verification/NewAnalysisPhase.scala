@@ -153,7 +153,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
               val rl = cap match {
                 case Some((program,ctx)) =>
 
-                  val out = simpleRewriter.simplifyWithSolver(simp_solver)(ex, Seq())
+                  val out = simpleRewriter.simplifyWithSolver(simp_solver)(ex, Seq(), false)
                   if (out._2 == SIMP_SUCCESS())
                     out._1
                   else ex
@@ -345,6 +345,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
       SolverFactory(() => new ExtendedFairZ3Solver(ctx, program))
     )
 
+    /* Create pool of solvers */
     for (c <- 0 until 16) { queue.enqueue( new FairZ3Solver(ctx, program) ) }
 
     val solverFactories = timeout match {
@@ -374,6 +375,9 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
       reporter.info("Writing down options and output...")
       createTestcase(ctx, report)
     }
+
+    /* Free our pool of solvers */
+    for (c <- 0 until 16) { queue.dequeue.free() }
     report
   }
 }
