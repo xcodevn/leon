@@ -107,6 +107,7 @@ public class MaLe {
 	}
 
 	public void training(List<String> rules, List<String> features, List<Example> lstEg) {
+		map.clear();
 		for (String rule : rules) {
 			ConcurrentHashMap<String, Integer> cFT = new ConcurrentHashMap<String, Integer> ();
 			ConcurrentHashMap<String, Integer> cFF = new ConcurrentHashMap<String, Integer> ();
@@ -132,9 +133,9 @@ public class MaLe {
 			int nc =  lstEg.size() - c;
 
 			double bias = Math.log( P(c, lstEg.size()) / P(nc, lstEg.size()));
-			System.out.println(String.format("Rule %s", rule));
+			// System.out.println(String.format("Rule %s", rule));
 			for (String f:  features) { 
-				System.out.println(String.format("f: %s : cFT %d c %d CFF %d nc %d", f, cFT.get(f), c, cFF.get(f), nc));
+				// System.out.println(String.format("f: %s : cFT %d c %d CFF %d nc %d", f, cFT.get(f), c, cFF.get(f), nc));
 				wi.put(f, Math.log(P(cFT.get(f),c) / P(cFF.get(f), nc)));
 			}
 			Classifier cf = new Classifier (rule, bias, wi );
