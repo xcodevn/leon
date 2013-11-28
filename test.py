@@ -2,10 +2,6 @@
 
 # override the default reporting of coords
 
-from pylab import *
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 import random
 import datetime
 import os
@@ -35,37 +31,8 @@ def main():
 			t2 = datetime.datetime.now()
 			delta = (t2-t1).total_seconds()
 			tc = Testcase("%d_%d"%(i, j), i, delta)
-			lstTC.append(tc)
 			tc.pp()
 
 	# print "AVG\t%s" % (s/TIMES)
-	
-
-def randTest():
-	fig, ax = subplots()
-	lstTC = []
-
-	def update(data):
-		(x, y, cl) = data
-		plot(x, y, cl)
-
-	def data_gen():
-		i = -1
-		while True:
-			i = i + 1
-			print "Test size %d" % i
-			t1 = datetime.datetime.now()
-			execCmd("./leon ./BT/bigTestcase.scala --numvc=%d --filter=MePo >/dev/null" % i)
-			t2 = datetime.datetime.now()
-			delta = (t2-t1).total_seconds()
-			tc = Testcase("%d"%i, i, delta)
-			lstTC.append(tc)
-			tc.pp()
-			yield (i, delta , 'ro')
-
-	ani = animation.FuncAnimation(fig, update, data_gen, interval=10000)
-	plt.show()
-
 if __name__ == '__main__':
-	randTest()
 	main()
