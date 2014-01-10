@@ -14,7 +14,6 @@ import solvers.z3._
 
 import scala.collection.mutable.{Set => MutableSet}
 
-import leon.solvers.lemmafilter._
 import leon.solvers.rewriter._
 
 import java.io._
@@ -219,7 +218,7 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
 
     val reporter = ctx.reporter
 
-    val fairZ3 = new ExtendedFairZ3Solver(ctx, program)
+    val fairZ3 = new FairZ3SolverFactory(ctx, program)
 
     def isFlagTurnOn(f: String, ctx: LeonContext): Boolean = {
       for (op <- ctx.options) {
@@ -247,13 +246,6 @@ object NewAnalysisPhase extends AnalysisPhaseClass {
         for (ru <- rus) SimpleRewriter.addRewriteRule(ru)
       }
       Rules.addDefaultRules(SimpleRewriter)
-    }
-
-    if (doTraining) {
-      reporter.info("Training MaSh Filter from user guide...")
-      val MaShFilter = new MaShFilter(ctx, program)
-      MaShFilter.train
-      MaShFilter.fairZ3.free()
     }
 
     val baseSolvers : Seq[SolverFactory[Solver]] = fairZ3 :: Nil

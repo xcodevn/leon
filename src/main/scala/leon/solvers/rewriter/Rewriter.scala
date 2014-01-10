@@ -49,8 +49,8 @@ abstract class Rewriter {
     override def output(msg: String) : Unit = { }
   }
 
+  implicit val debugSection = DebugSectionVerification
   var reporter: Reporter = new SilentReporter
-  implicit val debugSection = DebugSectionSolver 
 
   def setReporter(rp: Reporter) = {
     reporter = rp
